@@ -35,10 +35,22 @@ export interface NPCActionInput {
 }
 
 // =============================================================================
+// ILogisticsClient — Protocol-agnostic interface for logistics backend
+// =============================================================================
+
+export interface ILogisticsClient {
+  getHealth(): Promise<Record<string, unknown>>;
+  getSimulationStatus(): Promise<SimulationStatus>;
+  getRebellionProbability(npcId: string): Promise<RebellionProbabilityResponse>;
+  processNPCAction(npcId: string, action: NPCActionInput): Promise<NPCState>;
+  advanceSimulation(): Promise<SimulationStatus>;
+}
+
+// =============================================================================
 // LogisticsClient Class
 // =============================================================================
 
-export class LogisticsClient {
+export class LogisticsClient implements ILogisticsClient {
   private readonly baseUrl: string;
   private readonly timeoutMs: number;
   private readonly maxRetries: number;

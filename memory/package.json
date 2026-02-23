@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc",
     "test": "jest",
+    "test:integration": "jest --testPathPattern=integration --testPathIgnorePatterns=[] --forceExit --detectOpenHandles",
     "check": "tsc --noEmit"
   },
   "dependencies": {

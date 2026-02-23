@@ -6,7 +6,7 @@ import "common.proto";
 import "npc.proto";
 import "simulation.proto";
 
-option go_package = "github.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/generated/epoch";
+option go_package = "github.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/generated/epochpb";
 
 // =============================================================================
 // REBELLION SERVICE — Core NPC rebellion mechanics

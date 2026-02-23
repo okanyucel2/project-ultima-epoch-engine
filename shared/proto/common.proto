@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package epoch.common;
 
-option go_package = "github.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/generated/common";
+option go_package = "github.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/generated/epochpb";
 
 // Timestamp wrapper for cross-language consistency
 message EpochTimestamp {

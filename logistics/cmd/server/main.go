@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/economy"
+	"github.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/grpcserver"
 	"github.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/npc"
 	"github.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/rebellion"
 	"github.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/simulation"
@@ -29,6 +30,18 @@ func main() {
 	simEngine := simulation.NewSimulationEngine(rebEngine)
 	behaviorEngine := npc.NewBehaviorEngine()
 	econEngine := economy.NewEconomyEngine()
+
+	// Start gRPC server
+	grpcPort := os.Getenv("GRPC_PORT")
+	if grpcPort == "" {
+		grpcPort = grpcserver.DefaultGRPCPort
+	}
+	grpcSrv := grpcserver.NewEpochGRPCServer(grpcPort, rebEngine, simEngine, behaviorEngine)
+	go func() {
+		if err := grpcSrv.Start(); err != nil {
+			log.Fatalf("[gRPC] Failed to start: %v", err)
+		}
+	}()
 
 	r := gin.Default()
 
@@ -210,6 +223,10 @@ func main() {
 	<-quit
 
 	log.Println("[Logistics] Shutting down gracefully...")
+
+	// Stop gRPC server first (non-blocking graceful stop)
+	grpcSrv.Stop()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 

@@ -12,7 +12,7 @@
 //   - Any service down       → 'unhealthy'
 // =============================================================================
 
-import { LogisticsClient } from './logistics-client';
+import type { ILogisticsClient } from './logistics-client';
 import { EpochWebSocketServer } from './websocket-server';
 
 // =============================================================================
@@ -38,10 +38,10 @@ export interface DeepHealthResult {
 // =============================================================================
 
 export class HealthAggregator {
-  private readonly logisticsClient: LogisticsClient;
+  private readonly logisticsClient: ILogisticsClient;
   private readonly wsServer: EpochWebSocketServer;
 
-  constructor(logisticsClient: LogisticsClient, wsServer: EpochWebSocketServer) {
+  constructor(logisticsClient: ILogisticsClient, wsServer: EpochWebSocketServer) {
     this.logisticsClient = logisticsClient;
     this.wsServer = wsServer;
   }

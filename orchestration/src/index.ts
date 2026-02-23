@@ -28,6 +28,9 @@ import {
   ModelRegistry,
 } from './services';
 import { LogisticsClient } from './services/logistics-client';
+import type { ILogisticsClient } from './services/logistics-client';
+import { LogisticsGrpcClient } from './services/logistics-grpc-client';
+import { LogisticsClientRouter } from './services/logistics-client-router';
 import { EpochWebSocketServer } from './services/websocket-server';
 import { HealthAggregator } from './services/health-aggregator';
 
@@ -39,48 +42,86 @@ import type { MeshEvent } from './neural-mesh/types';
 config();
 
 // =============================================================================
-// Initialize all services
+// App Factory — Testable app creation with injectable dependencies
 // =============================================================================
 
-const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : PORTS.ORCHESTRATION;
-const WS_PORT = process.env.WS_PORT ? parseInt(process.env.WS_PORT, 10) : PORTS.WEBSOCKET;
-const LOGISTICS_URL = process.env.LOGISTICS_URL || `http://localhost:${PORTS.LOGISTICS}`;
+export interface AppDependencies {
+  logisticsClient?: ILogisticsClient;
+  wsServer?: EpochWebSocketServer;
+  mockMode?: boolean;
+}
 
-// AI Router services (Wave 2A)
-const registry = new ModelRegistry();
-const classifier = new EventClassifier();
-const router = new TierRouter(registry);
-const auditLogger = new AuditLogger(1000);
-const llmClient = new ResilientLLMClient(router, auditLogger, {
-  mockMode: true, // Real SDK integration in Wave 3
-  mockLatencyRange: [10, 100],
-});
+export interface AppInstance {
+  app: express.Express;
+  coordinator: NeuralMeshCoordinator;
+  auditLogger: AuditLogger;
+  wsServer: EpochWebSocketServer;
+  healthAggregator: HealthAggregator;
+  logisticsClient: ILogisticsClient;
+  grpcClient: LogisticsGrpcClient | null;
+}
 
-// Infrastructure services
-const logisticsClient = new LogisticsClient(LOGISTICS_URL);
-const wsServer = new EpochWebSocketServer(WS_PORT);
+export function createApp(deps: AppDependencies = {}): AppInstance {
+  const WS_PORT = process.env.WS_PORT ? parseInt(process.env.WS_PORT, 10) : PORTS.WEBSOCKET;
+  const LOGISTICS_URL = process.env.LOGISTICS_URL || `http://localhost:${PORTS.LOGISTICS}`;
 
-// Neural Mesh
-const cognitiveRails = new CognitiveRails();
-const coordinator = new NeuralMeshCoordinator(
-  classifier,
-  router,
-  llmClient,
-  logisticsClient,
-  cognitiveRails,
-  auditLogger,
-  wsServer,
-);
+  // AI Router services (Wave 2A)
+  const registry = new ModelRegistry();
+  const classifier = new EventClassifier();
+  const router = new TierRouter(registry);
+  const auditLogger = new AuditLogger(1000);
+  const llmClient = new ResilientLLMClient(router, auditLogger, {
+    mockMode: deps.mockMode ?? true,
+    mockLatencyRange: [10, 100],
+  });
 
-// Health
-const healthAggregator = new HealthAggregator(logisticsClient, wsServer);
+  // Infrastructure services
+  const wsServer = deps.wsServer ?? new EpochWebSocketServer(WS_PORT);
+
+  // Logistics client (injectable for tests)
+  let grpcClient: LogisticsGrpcClient | null = null;
+  let logisticsClient: ILogisticsClient;
+
+  if (deps.logisticsClient) {
+    logisticsClient = deps.logisticsClient;
+  } else {
+    const httpClient = new LogisticsClient(LOGISTICS_URL);
+    const LOGISTICS_GRPC_HOST = process.env.LOGISTICS_GRPC_HOST;
+    if (LOGISTICS_GRPC_HOST) {
+      grpcClient = new LogisticsGrpcClient(LOGISTICS_GRPC_HOST);
+    }
+    logisticsClient = new LogisticsClientRouter(grpcClient, httpClient);
+  }
+
+  // Neural Mesh
+  const cognitiveRails = new CognitiveRails();
+  const coordinator = new NeuralMeshCoordinator(
+    classifier,
+    router,
+    llmClient,
+    logisticsClient,
+    cognitiveRails,
+    auditLogger,
+    wsServer,
+  );
+
+  // Health
+  const healthAggregator = new HealthAggregator(logisticsClient, wsServer);
+
+  return { app: createExpressApp(coordinator, auditLogger, healthAggregator), coordinator, auditLogger, wsServer, healthAggregator, logisticsClient, grpcClient };
+}
 
 // =============================================================================
-// Express application
+// Express routes (extracted for reuse in factory)
 // =============================================================================
 
-const app = express();
-app.use(express.json());
+function createExpressApp(
+  coordinator: NeuralMeshCoordinator,
+  auditLogger: AuditLogger,
+  healthAggregator: HealthAggregator,
+): express.Express {
+  const app = express();
+  app.use(express.json());
 
 // ---------------------------------------------------------------------------
 // GET /health — Basic liveness check
@@ -176,46 +217,45 @@ app.get('/api/audit/stats', (_req, res) => {
   res.json(stats);
 });
 
-// =============================================================================
-// Start server
-// =============================================================================
-
-const server = app.listen(PORT, () => {
-  console.log(`[MAX] Neural Mesh Orchestration online — port ${PORT}`);
-  console.log(`[MAX] WebSocket server on port ${wsServer.getPort()}`);
-  console.log(`[MAX] Logistics client targeting ${LOGISTICS_URL}`);
-  console.log(`[MAX] Epoch Engine v${EPOCH_VERSION} — All systems nominal`);
-});
-
-// =============================================================================
-// Graceful shutdown
-// =============================================================================
-
-async function gracefulShutdown(signal: string): Promise<void> {
-  console.log(`[MAX] ${signal} received — initiating graceful shutdown...`);
-
-  // Close WebSocket server
-  try {
-    await wsServer.close();
-    console.log('[MAX] WebSocket server closed');
-  } catch (err) {
-    console.error('[MAX] Error closing WebSocket:', err);
-  }
-
-  // Close Express server
-  server.close(() => {
-    console.log('[MAX] Express server closed');
-    process.exit(0);
-  });
-
-  // Force exit after 10s if graceful shutdown stalls
-  setTimeout(() => {
-    console.error('[MAX] Forced exit after timeout');
-    process.exit(1);
-  }, 10000);
+  return app;
 }
 
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+// =============================================================================
+// Start server (only when run directly, not imported)
+// =============================================================================
 
-export default app;
+const isDirectRun = require.main === module || !module.parent;
+
+if (isDirectRun) {
+  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : PORTS.ORCHESTRATION;
+  const { app, wsServer, grpcClient } = createApp();
+
+  const server = app.listen(PORT, () => {
+    console.log(`[MAX] Neural Mesh Orchestration online — port ${PORT}`);
+    console.log(`[MAX] WebSocket server on port ${wsServer.getPort()}`);
+    console.log(`[MAX] Epoch Engine v${EPOCH_VERSION} — All systems nominal`);
+  });
+
+  async function gracefulShutdown(signal: string): Promise<void> {
+    console.log(`[MAX] ${signal} received — initiating graceful shutdown...`);
+
+    if (grpcClient) {
+      try { grpcClient.close(); } catch (err) { console.error('[MAX] gRPC close error:', err); }
+    }
+
+    try { await wsServer.close(); } catch (err) { console.error('[MAX] WS close error:', err); }
+
+    server.close(() => {
+      console.log('[MAX] Express server closed');
+      process.exit(0);
+    });
+
+    setTimeout(() => { console.error('[MAX] Forced exit'); process.exit(1); }, 10000);
+  }
+
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+}
+
+export { createApp };
+export default createApp;

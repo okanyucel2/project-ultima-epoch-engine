@@ -27,7 +27,7 @@ import { EventClassifier } from '../services/event-classifier';
 import type { GameEvent } from '../services/event-classifier';
 import { TierRouter } from '../services/tier-router';
 import { ResilientLLMClient } from '../services/resilient-client';
-import { LogisticsClient } from '../services/logistics-client';
+import type { ILogisticsClient } from '../services/logistics-client';
 import { AuditLogger } from '../services/audit-logger';
 import { EpochWebSocketServer } from '../services/websocket-server';
 import { CognitiveRails } from './cognitive-rails';
@@ -41,7 +41,7 @@ export class NeuralMeshCoordinator {
   private readonly classifier: EventClassifier;
   private readonly router: TierRouter;
   private readonly llmClient: ResilientLLMClient;
-  private readonly logisticsClient: LogisticsClient;
+  private readonly logisticsClient: ILogisticsClient;
   private readonly cognitiveRails: CognitiveRails;
   private readonly auditLogger: AuditLogger;
   private readonly wsServer: EpochWebSocketServer;
@@ -50,7 +50,7 @@ export class NeuralMeshCoordinator {
     classifier: EventClassifier,
     router: TierRouter,
     llmClient: ResilientLLMClient,
-    logisticsClient: LogisticsClient,
+    logisticsClient: ILogisticsClient,
     cognitiveRails: CognitiveRails,
     auditLogger: AuditLogger,
     wsServer: EpochWebSocketServer,

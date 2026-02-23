@@ -4,7 +4,7 @@ package epoch.npc;
 
 import "common.proto";
 
-option go_package = "github.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/generated/npc";
+option go_package = "github.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/generated/epochpb";
 
 // NPC identity and state
 message NPCState {

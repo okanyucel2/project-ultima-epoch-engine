@@ -4,7 +4,7 @@ package epoch.simulation;
 
 import "common.proto";
 
-option go_package = "github.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/generated/simulation";
+option go_package = "github.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/generated/epochpb";
 
 // Resource types in the Epoch Engine economy
 enum ResourceType {

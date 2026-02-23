@@ -16,7 +16,10 @@ export type { AuditStats } from './audit-logger';
 
 // Wave 3 — Integration
 export { LogisticsClient } from './logistics-client';
-export type { RebellionProbabilityResponse, NPCActionInput } from './logistics-client';
+export type { ILogisticsClient, RebellionProbabilityResponse, NPCActionInput } from './logistics-client';
+export { LogisticsGrpcClient } from './logistics-grpc-client';
+export { LogisticsClientRouter } from './logistics-client-router';
+export type { RouterStats } from './logistics-client-router';
 export { EpochWebSocketServer } from './websocket-server';
 export { HealthAggregator } from './health-aggregator';
 export type { ServiceHealth, ServiceHealthStatus, DeepHealthResult } from './health-aggregator';
