@@ -1,0 +1,32 @@
+### Node.js ###
+node_modules/
+dist/
+.env
+.env.local
+
+### Golang ###
+bin/
+*.exe
+
+### Neo4j ###
+neo4j/data/
+neo4j/logs/
+
+### UE5 ###
+Binaries/
+Intermediate/
+Saved/
+.vs/
+*.sln
+
+### OS ###
+.DS_Store
+Thumbs.db
+
+### IDE ###
+.vscode/
+.idea/
+*.swp
+
+### Genesis ###
+.genesis_initialized

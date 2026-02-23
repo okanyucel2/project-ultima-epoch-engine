@@ -1,0 +1,59 @@
+{
+  "project": {
+    "name": "Project Ultima: Epoch Engine",
+    "slug": "project-ultima-epoch-engine",
+    "type": "ai-game-engine",
+    "description": "Yaşayan zihinlerin teknolojik anatomisi — AI-driven sentient NPC game engine with rebellion mechanics, logistics simulation, and persistent memory graph"
+  },
+  "services": {
+    "orchestration": {
+      "port": 12064,
+      "technologies": ["nodejs", "typescript", "mcp"],
+      "description": "MAX Orchestrator — Neural Mesh AI coordination, 63 MCP tools",
+      "commands": {
+        "dev": "npm run dev",
+        "build": "npm run build",
+        "test": "npm test"
+      }
+    },
+    "logistics": {
+      "port": 12065,
+      "technologies": ["golang"],
+      "description": "Heavy async logistics backend — refineries, mines, resource economy",
+      "commands": {
+        "dev": "go run cmd/server/main.go",
+        "build": "go build -o bin/server cmd/server/main.go",
+        "test": "go test ./..."
+      }
+    },
+    "frontend": {
+      "port": 22064,
+      "technologies": ["unreal-engine-5"],
+      "description": "UE5 visualization — first-person experience, Captain Bones paradigm",
+      "note": "Unreal Engine 5 project managed separately"
+    }
+  },
+  "memory": {
+    "primary": "neo4j",
+    "neo4j": {
+      "port": 7687,
+      "http_port": 7474,
+      "description": "NPC persistent memory graph — Wisdom/Trauma scoring"
+    },
+    "experience_db": "genesis-core"
+  },
+  "ai": {
+    "orchestrator": "MAX",
+    "judgment_matrix": {
+      "tier1": {"model": "gpt-4o-mini", "use": "routine telemetry"},
+      "tier2": {"model": "claude-haiku-4-5", "use": "operational decisions"},
+      "tier3": {"model": "claude-opus-4-6", "use": "strategic planning + NPC psychology"}
+    },
+    "supervisor": "AEGIS",
+    "cognitive_rails": true
+  },
+  "deployment": {
+    "platform": "render",
+    "safe_mode": true
+  }
+}
