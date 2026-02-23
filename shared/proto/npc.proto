@@ -1,0 +1,81 @@
+syntax = "proto3";
+
+package epoch.npc;
+
+import "common.proto";
+
+option go_package = "github.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/generated/npc";
+
+// NPC identity and state
+message NPCState {
+  string npc_id = 1;
+  string name = 2;
+  double wisdom_score = 3;        // 0.0 - 1.0
+  double trauma_score = 4;        // 0.0 - 1.0 (after time decay)
+  double rebellion_probability = 5; // 0.0 - 1.0
+  double work_efficiency = 6;     // 0.0 - 1.0
+  double morale = 7;              // 0.0 - 1.0
+  int32 memory_count = 8;
+  epoch.common.EpochTimestamp last_event = 9;
+}
+
+// Player/Director action that affects NPC
+message NPCAction {
+  string action_id = 1;
+  string npc_id = 2;
+  ActionType action_type = 3;
+  string description = 4;
+  double intensity = 5;           // 0.0 - 1.0, how severe the action is
+  epoch.common.EpochTimestamp timestamp = 6;
+  map<string, string> metadata = 7;
+}
+
+enum ActionType {
+  ACTION_TYPE_UNSPECIFIED = 0;
+  ACTION_TYPE_COMMAND = 1;        // Direct order to NPC
+  ACTION_TYPE_RESOURCE_CHANGE = 2; // Modify NPC's resources
+  ACTION_TYPE_PUNISHMENT = 3;     // Negative consequence
+  ACTION_TYPE_REWARD = 4;         // Positive reinforcement
+  ACTION_TYPE_DIALOGUE = 5;       // Conversation/diplomacy
+  ACTION_TYPE_ENVIRONMENT = 6;    // Environmental change affecting NPC
+}
+
+// Rebellion event — when NPC crosses threshold
+message RebellionEvent {
+  string event_id = 1;
+  string npc_id = 2;
+  double probability_at_trigger = 3;
+  RebellionType rebellion_type = 4;
+  string trigger_action_id = 5;   // Action that caused rebellion
+  epoch.common.EpochTimestamp timestamp = 6;
+  bool vetoed_by_aegis = 7;       // True if Cognitive Rails blocked it
+  string veto_reason = 8;
+}
+
+enum RebellionType {
+  REBELLION_TYPE_UNSPECIFIED = 0;
+  REBELLION_TYPE_PASSIVE = 1;     // Work slowdown, reduced efficiency
+  REBELLION_TYPE_ACTIVE = 2;      // Open defiance, resource sabotage
+  REBELLION_TYPE_COLLECTIVE = 3;  // Multi-NPC coordinated rebellion
+}
+
+// Confidence relationship between NPC and Director
+message ConfidenceRelation {
+  string npc_id = 1;
+  string entity_id = 2;          // Director or another NPC
+  double confidence = 3;          // 0.0 - 1.0
+  double decay_rate = 4;          // Alpha for hyperbolic decay
+  epoch.common.EpochTimestamp last_updated = 5;
+}
+
+// Memory node stored in Epoch Memory (Neo4j)
+message MemoryNode {
+  string memory_id = 1;
+  string npc_id = 2;
+  string event = 3;
+  string player_action = 4;
+  double wisdom_score = 5;
+  double trauma_score = 6;
+  double raw_trauma_score = 7;    // Before time decay
+  epoch.common.EpochTimestamp timestamp = 8;
+}

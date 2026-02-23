@@ -3,25 +3,53 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
 echo "[Ultima] Starting all services..."
+echo ""
 
-# Orchestration (Node.js)
-echo "[1/2] Starting orchestration (port 12064)..."
-cd "$(dirname "$0")/../orchestration" && npm run dev &
-ORCH_PID=$!
+PIDS=()
 
-# Logistics (Golang)
-echo "[2/2] Starting logistics (port 12065)..."
-cd "$(dirname "$0")/../logistics" && go run cmd/server/main.go &
-LOG_PID=$!
+# [1/3] Orchestration (Node.js) — port 12064 + WebSocket 32064
+echo "[1/3] Starting orchestration (port 12064, ws:32064)..."
+cd "$PROJECT_ROOT/orchestration" && npm run dev &
+PIDS+=($!)
+
+# [2/3] Logistics (Golang) — port 12065
+echo "[2/3] Starting logistics (port 12065)..."
+cd "$PROJECT_ROOT/logistics" && go run cmd/server/main.go &
+PIDS+=($!)
+
+# [3/3] Dashboard (Vue 3) — port 22064
+echo "[3/3] Starting dashboard (port 22064)..."
+cd "$PROJECT_ROOT/dashboard" && npm run dev &
+PIDS+=($!)
 
 echo ""
-echo "✓ Ultima Epoch Engine running"
-echo "  Orchestration: http://localhost:12064/health"
-echo "  Logistics:     http://localhost:12065/health"
-echo "  Neo4j:         http://localhost:7474"
+echo "=========================================="
+echo "  Ultima Epoch Engine — All Services Up"
+echo "=========================================="
+echo ""
+echo "  Orchestration:  http://localhost:12064/health"
+echo "  Logistics:      http://localhost:12065/health"
+echo "  Dashboard:      http://localhost:22064"
+echo "  WebSocket:      ws://localhost:32064"
+echo "  Neo4j Browser:  http://localhost:7474"
+echo ""
+echo "  Deep Health:    http://localhost:12064/health/deep"
+echo "  Audit Log:      http://localhost:12064/api/audit/recent"
 echo ""
 echo "Press Ctrl+C to stop all services."
 
-trap "kill $ORCH_PID $LOG_PID 2>/dev/null; echo 'Stopped.'" EXIT
+cleanup() {
+  echo ""
+  echo "[Ultima] Stopping all services..."
+  for pid in "${PIDS[@]}"; do
+    kill "$pid" 2>/dev/null || true
+  done
+  echo "[Ultima] Stopped."
+}
+
+trap cleanup EXIT INT TERM
 wait

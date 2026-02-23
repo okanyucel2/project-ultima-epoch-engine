@@ -1,0 +1,23 @@
+version: v1
+plugins:
+  # TypeScript generation for orchestration service
+  - plugin: buf.build/community/stephenh-ts-proto
+    out: ../../orchestration/src/generated
+    opt:
+      - esModuleInterop=true
+      - outputServices=grpc-js
+      - env=node
+      - useOptionals=messages
+      - exportCommonSymbols=false
+      - snakeToCamel=true
+
+  # Go generation for logistics service
+  - plugin: buf.build/protocolbuffers/go
+    out: ../../logistics/internal/generated
+    opt:
+      - paths=source_relative
+
+  - plugin: buf.build/grpc/go
+    out: ../../logistics/internal/generated
+    opt:
+      - paths=source_relative

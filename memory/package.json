@@ -1,0 +1,24 @@
+{
+  "name": "epoch-memory",
+  "version": "0.1.0",
+  "description": "Epoch Memory — Neo4j NPC persistent memory graph",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "neo4j-driver": "^5.17.0",
+    "zod": "^3.22.4",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.5",
+    "@types/uuid": "^9.0.7",
+    "typescript": "^5.3.3",
+    "jest": "^29.7.0",
+    "@types/jest": "^29.5.11",
+    "ts-jest": "^29.1.2"
+  }
+}

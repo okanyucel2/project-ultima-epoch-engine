@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package epoch.simulation;
+
+import "common.proto";
+
+option go_package = "github.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/generated/simulation";
+
+// Resource types in the Epoch Engine economy
+enum ResourceType {
+  RESOURCE_TYPE_UNSPECIFIED = 0;
+  RESOURCE_TYPE_SIM = 1;          // Primary currency/energy
+  RESOURCE_TYPE_RAPIDLUM = 2;     // Rare refined material
+  RESOURCE_TYPE_MINERAL = 3;      // Raw extraction material
+}
+
+message ResourceState {
+  ResourceType type = 1;
+  double quantity = 2;
+  double production_rate = 3;     // Per tick
+  double consumption_rate = 4;    // Per tick
+}
+
+message SimulationStatus {
+  int32 refineries = 1;
+  int32 mines = 2;
+  repeated ResourceState resources = 3;
+  double overall_rebellion_probability = 4;
+  int32 active_npcs = 5;
+  int64 tick_count = 6;
+  epoch.common.EpochTimestamp last_tick = 7;
+}
+
+// Refinery — converts Mineral into Rapidlum
+message Refinery {
+  string refinery_id = 1;
+  double efficiency = 2;          // 0.0 - 1.0
+  double mineral_input_rate = 3;
+  double rapidlum_output_rate = 4;
+  int32 assigned_npcs = 5;
+  bool operational = 6;
+}
+
+// Mine — extracts Mineral
+message Mine {
+  string mine_id = 1;
+  double yield_rate = 2;          // Per tick per NPC
+  double mineral_reserve = 3;     // Remaining extractable
+  int32 assigned_npcs = 4;
+  bool operational = 5;
+}

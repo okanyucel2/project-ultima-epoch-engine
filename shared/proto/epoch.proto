@@ -1,0 +1,108 @@
+syntax = "proto3";
+
+package epoch;
+
+import "common.proto";
+import "npc.proto";
+import "simulation.proto";
+
+option go_package = "github.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/generated/epoch";
+
+// =============================================================================
+// REBELLION SERVICE — Core NPC rebellion mechanics
+// =============================================================================
+
+service RebellionService {
+  // Get rebellion probability for a specific NPC
+  rpc GetRebellionProbability(RebellionRequest) returns (RebellionResponse);
+
+  // Process an NPC action and return updated state
+  rpc ProcessNPCAction(ProcessActionRequest) returns (ProcessActionResponse);
+
+  // Stream real-time NPC events (server-side streaming)
+  rpc StreamNPCEvents(NPCEventFilter) returns (stream NPCEventStream);
+}
+
+message RebellionRequest {
+  string npc_id = 1;
+  bool include_factors = 2;  // Return detailed breakdown
+}
+
+message RebellionResponse {
+  string npc_id = 1;
+  double probability = 2;    // 0.0 - 1.0
+  RebellionFactors factors = 3;
+  bool threshold_exceeded = 4;
+  epoch.common.EpochTimestamp calculated_at = 5;
+}
+
+message RebellionFactors {
+  double base = 1;            // 0.05 baseline
+  double trauma_modifier = 2; // avgTrauma * 0.3
+  double efficiency_modifier = 3; // (1 - efficiency) * 0.3
+  double morale_modifier = 4; // (1 - morale) * 0.2
+}
+
+message ProcessActionRequest {
+  epoch.npc.NPCAction action = 1;
+  bool dry_run = 2;           // Calculate effects without applying
+}
+
+message ProcessActionResponse {
+  epoch.npc.NPCState updated_state = 1;
+  double rebellion_delta = 2; // Change in rebellion probability
+  bool rebellion_triggered = 3;
+  epoch.npc.RebellionEvent rebellion_event = 4; // Set if triggered
+}
+
+message NPCEventFilter {
+  repeated string npc_ids = 1;  // Empty = all NPCs
+  double min_rebellion_probability = 2; // Only events above threshold
+}
+
+message NPCEventStream {
+  string event_type = 1;     // "state_change", "rebellion", "action_processed"
+  epoch.npc.NPCState state = 2;
+  epoch.npc.RebellionEvent rebellion = 3;
+  epoch.common.EpochTimestamp timestamp = 4;
+}
+
+// =============================================================================
+// SIMULATION SERVICE — Resource economy and logistics
+// =============================================================================
+
+service SimulationService {
+  // Get current simulation status
+  rpc GetSimulationStatus(SimStatusRequest) returns (epoch.simulation.SimulationStatus);
+
+  // Update resource allocation
+  rpc UpdateResourceAllocation(ResourceAllocationRequest) returns (ResourceAllocationResponse);
+
+  // Advance simulation by N ticks
+  rpc AdvanceSimulation(AdvanceRequest) returns (AdvanceResponse);
+}
+
+message SimStatusRequest {
+  bool include_details = 1;
+}
+
+message ResourceAllocationRequest {
+  string target_id = 1;      // Refinery or Mine ID
+  int32 npc_count = 2;       // NPCs to assign
+  epoch.simulation.ResourceType resource_type = 3;
+}
+
+message ResourceAllocationResponse {
+  bool success = 1;
+  string message = 2;
+  epoch.simulation.SimulationStatus updated_status = 3;
+}
+
+message AdvanceRequest {
+  int32 ticks = 1;            // Number of ticks to advance
+}
+
+message AdvanceResponse {
+  epoch.simulation.SimulationStatus status = 1;
+  repeated NPCEventStream events = 2; // Events generated during ticks
+}

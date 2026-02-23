@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package epoch.common;
+
+option go_package = "github.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/generated/common";
+
+// Timestamp wrapper for cross-language consistency
+message EpochTimestamp {
+  string iso8601 = 1;
+  int64 unix_ms = 2;
+}
+
+// Standard error response
+message ErrorResponse {
+  ErrorCode code = 1;
+  string message = 2;
+  string details = 3;
+  EpochTimestamp timestamp = 4;
+}
+
+enum ErrorCode {
+  ERROR_CODE_UNSPECIFIED = 0;
+  ERROR_CODE_INTERNAL = 1;
+  ERROR_CODE_NOT_FOUND = 2;
+  ERROR_CODE_INVALID_INPUT = 3;
+  ERROR_CODE_VETO = 4;           // AEGIS Cognitive Rails veto
+  ERROR_CODE_CIRCUIT_OPEN = 5;   // Provider circuit breaker open
+  ERROR_CODE_TIMEOUT = 6;
+}
+
+// Event tier classification for AI routing
+enum EventTier {
+  EVENT_TIER_UNSPECIFIED = 0;
+  EVENT_TIER_ROUTINE = 1;       // Tier 1: GPT-4o-mini — telemetry, heartbeats
+  EVENT_TIER_OPERATIONAL = 2;   // Tier 2: Claude Haiku 4.5 — resource decisions
+  EVENT_TIER_STRATEGIC = 3;     // Tier 3: Claude Opus 4.6 — rebellion, psychology
+}
+
+// AI provider types
+enum ProviderType {
+  PROVIDER_TYPE_UNSPECIFIED = 0;
+  PROVIDER_TYPE_ANTHROPIC = 1;
+  PROVIDER_TYPE_OPENAI = 2;
+  PROVIDER_TYPE_GOOGLE = 3;
+  PROVIDER_TYPE_CUSTOM = 4;
+}
+
+// Health check
+message HealthRequest {}
+
+message HealthResponse {
+  string status = 1;
+  string service = 2;
+  string version = 3;
+  EpochTimestamp timestamp = 4;
+  map<string, string> metadata = 5;
+}

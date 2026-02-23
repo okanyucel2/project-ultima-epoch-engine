@@ -1,0 +1,8 @@
+version: v1
+name: buf.build/okanyucel2/epoch-engine
+breaking:
+  use:
+    - FILE
+lint:
+  use:
+    - DEFAULT

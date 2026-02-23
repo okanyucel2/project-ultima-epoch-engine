@@ -26,8 +26,22 @@
         "test": "go test ./..."
       }
     },
-    "frontend": {
+    "dashboard": {
       "port": 22064,
+      "technologies": ["vue3", "typescript", "vite"],
+      "description": "Admin dashboard — NPC monitor, rebellion dashboard, audit log, system health",
+      "commands": {
+        "dev": "npm run dev",
+        "build": "npm run build",
+        "test": "npx vue-tsc --noEmit"
+      }
+    },
+    "websocket": {
+      "port": 32064,
+      "description": "Real-time event streaming — npc-events, rebellion-alerts, simulation-ticks"
+    },
+    "visualization": {
+      "port": null,
       "technologies": ["unreal-engine-5"],
       "description": "UE5 visualization — first-person experience, Captain Bones paradigm",
       "note": "Unreal Engine 5 project managed separately"
@@ -38,7 +52,7 @@
     "neo4j": {
       "port": 7687,
       "http_port": 7474,
-      "description": "NPC persistent memory graph — Wisdom/Trauma scoring"
+      "description": "Epoch Memory — NPC persistent graph with Wisdom/Trauma scoring and Confidence edges"
     },
     "experience_db": "genesis-core"
   },

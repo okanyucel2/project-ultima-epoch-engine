@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "lib": ["ES2022"],
+    "outDir": "./dist-test",
+    "rootDirs": ["./src", "./__tests__", "../shared/types"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": false,
+    "sourceMap": true,
+    "baseUrl": "."
+  },
+  "include": ["src/**/*", "__tests__/**/*", "../shared/types/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
