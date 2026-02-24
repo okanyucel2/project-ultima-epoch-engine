@@ -1,3 +1,4 @@
+import neo4j from 'neo4j-driver';
 import { getTestPool, closeTestPool } from './neo4j-test-helper';
 import { Neo4jConnectionPool } from '../../src/graph/connection-pool';
 
@@ -37,7 +38,8 @@ describe('Neo4j Connection Pool (Integration)', () => {
     // Acquire a session via withSession — should auto-release
     const result = await pool.withSession(async (session) => {
       const res = await session.run('RETURN 42 AS answer');
-      return res.records[0].get('answer');
+      const value = res.records[0].get('answer');
+      return neo4j.isInt(value) ? value.toNumber() : value;
     });
 
     expect(result).toBe(42);

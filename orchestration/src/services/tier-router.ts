@@ -109,6 +109,13 @@ export class TierRouter {
   }
 
   /**
+   * Get the model registry (used by ResilientLLMClient for provider config).
+   */
+  getRegistry(): ModelRegistry {
+    return this.registry;
+  }
+
+  /**
    * Get all circuit breakers keyed by provider type.
    */
   getAllCircuitBreakers(): Map<ProviderType, ProviderCircuitBreaker> {

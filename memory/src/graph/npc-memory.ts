@@ -1,3 +1,4 @@
+import neo4j from 'neo4j-driver';
 import { v4 as uuidv4 } from 'uuid';
 import { createTimestamp } from '../../../shared/types/common';
 import { DecayStrategy } from '../../../shared/types/memory';
@@ -17,6 +18,14 @@ import type { Neo4jConnectionPool } from './connection-pool';
 //   (NPC {id, name})-[:REMEMBERS]->(Memory {memoryId, event, playerAction,
 //     wisdomScore, traumaScore, rawTraumaScore, timestamp})
 // =============================================================================
+
+/** Convert Neo4j Integer to JS number (handles both plain numbers and {high, low} objects) */
+function toNumber(value: unknown): number {
+  if (value === null || value === undefined) return 0;
+  if (typeof value === 'number') return value;
+  if (neo4j.isInt(value)) return (value as neo4j.Integer).toNumber();
+  return Number(value);
+}
 
 /** Default decay configuration for trauma calculation */
 const DEFAULT_DECAY_CONFIG: DecayConfig = {
@@ -99,19 +108,19 @@ export class NPCMemoryGraph {
                 m.timestamp AS timestamp
          ORDER BY m.timestamp DESC
          LIMIT $limit`,
-        { npcId, limit: limit },
+        { npcId, limit: neo4j.int(limit) },
       );
 
       return result.records.map((record) => {
-        const unixMs = record.get('timestamp') as number;
+        const unixMs = toNumber(record.get('timestamp'));
         return {
           memoryId: record.get('memoryId') as string,
           npcId,
           event: record.get('event') as string,
           playerAction: record.get('playerAction') as string,
-          wisdomScore: record.get('wisdomScore') as number,
-          traumaScore: record.get('traumaScore') as number,
-          rawTraumaScore: record.get('rawTraumaScore') as number,
+          wisdomScore: toNumber(record.get('wisdomScore')),
+          traumaScore: toNumber(record.get('traumaScore')),
+          rawTraumaScore: toNumber(record.get('rawTraumaScore')),
           timestamp: {
             iso8601: new Date(unixMs).toISOString(),
             unixMs,
@@ -174,10 +183,11 @@ export class NPCMemoryGraph {
 
       const record = result.records[0];
       const name = (record.get('name') as string) ?? npcId;
-      const memoryCount = (record.get('memoryCount') as number) ?? 0;
-      const avgWisdom = (record.get('avgWisdom') as number) ?? 0;
-      const avgTrauma = (record.get('avgTrauma') as number) ?? 0;
-      const lastEventTs = record.get('lastEventTs') as number | null;
+      const memoryCount = toNumber(record.get('memoryCount'));
+      const avgWisdom = toNumber(record.get('avgWisdom'));
+      const avgTrauma = toNumber(record.get('avgTrauma'));
+      const rawLastEventTs = record.get('lastEventTs');
+      const lastEventTs = rawLastEventTs != null ? toNumber(rawLastEventTs) : null;
 
       // Calculate rebellion probability with trauma decay
       const rebellionProbability = await this.getRebellionProbability(npcId);

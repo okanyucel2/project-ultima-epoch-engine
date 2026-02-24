@@ -7,7 +7,7 @@
 // - Audit logging (every decision logged)
 // - Latency measurement
 //
-// Uses mock implementations for now (real SDK integration in Wave 3).
+// Mock mode (default) for testing; real providers via ProviderAdapterFactory.
 // =============================================================================
 
 import { v4 as uuidv4 } from 'uuid';
@@ -21,6 +21,7 @@ import {
 import { createTimestamp, EpochError, ErrorCode } from '../../shared/types/common';
 import { TierRouter } from './tier-router';
 import { AuditLogger } from './audit-logger';
+import { ProviderAdapterFactory } from './providers/adapter-factory';
 
 // =============================================================================
 // Types
@@ -87,6 +88,7 @@ export class ResilientLLMClient {
   private readonly router: TierRouter;
   private readonly auditLogger: AuditLogger;
   private readonly options: Required<ResilientClientOptions>;
+  private _adapterFactory?: ProviderAdapterFactory;
 
   constructor(
     router: TierRouter,
@@ -95,11 +97,24 @@ export class ResilientLLMClient {
   ) {
     this.router = router;
     this.auditLogger = auditLogger;
+
+    // Priority: constructor option > LLM_MOCK_MODE env var > default (true)
+    const envMockMode = process.env.LLM_MOCK_MODE;
+    const resolvedMockMode = options?.mockMode ??
+      (envMockMode !== undefined ? envMockMode !== 'false' : true);
+
     this.options = {
-      mockMode: options?.mockMode ?? true,
+      mockMode: resolvedMockMode,
       mockShouldFail: options?.mockShouldFail ?? false,
       mockLatencyRange: options?.mockLatencyRange ?? [5, 50],
     };
+  }
+
+  private getAdapterFactory(): ProviderAdapterFactory {
+    if (!this._adapterFactory) {
+      this._adapterFactory = new ProviderAdapterFactory(this.router.getRegistry());
+    }
+    return this._adapterFactory;
   }
 
   // ---------------------------------------------------------------------------
@@ -225,7 +240,7 @@ export class ResilientLLMClient {
     provider: ProviderType,
     model: string,
     prompt: string,
-    _options?: CompletionOptions,
+    options?: CompletionOptions,
   ): Promise<{ content: string; inputTokens: number; outputTokens: number }> {
     if (this.options.mockMode) {
       // Simulate network latency
@@ -241,12 +256,19 @@ export class ResilientLLMClient {
       );
     }
 
-    // Real API calls will be implemented in Wave 3
-    throw new EpochError(
-      ErrorCode.INTERNAL,
-      'Real API calls not yet implemented',
-      'Set mockMode: true or wait for Wave 3 SDK integration',
-    );
+    // Real API call via provider adapter
+    const factory = this.getAdapterFactory();
+    const adapter = factory.getAdapter(provider);
+
+    if (!adapter) {
+      // No adapter available (missing API key) — fall back to mock with warning
+      console.warn(
+        `[ResilientLLMClient] No adapter for provider ${provider}, falling back to mock`,
+      );
+      return generateMockResponse(provider, model, prompt, false);
+    }
+
+    return adapter.complete(model, prompt, options);
   }
 
   /**

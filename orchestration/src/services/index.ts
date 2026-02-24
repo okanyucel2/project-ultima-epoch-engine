@@ -25,3 +25,7 @@ export { HealthAggregator } from './health-aggregator';
 export type { ServiceHealth, ServiceHealthStatus, DeepHealthResult } from './health-aggregator';
 export { MemoryIntegration } from './memory-integration';
 export type { IMemoryBackend, NPCContext } from './memory-integration';
+
+// Wave 8A — Provider Adapters
+export type { ProviderAdapter, ProviderCompletionResult } from './providers';
+export { AnthropicAdapter, OpenAIAdapter, ProviderAdapterFactory } from './providers';
