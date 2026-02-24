@@ -16,6 +16,7 @@
 
 import * as grpc from '@grpc/grpc-js';
 import type { ServiceError } from '@grpc/grpc-js';
+import { ResourceType } from '../../shared/types/simulation';
 import type { SimulationStatus } from '../../shared/types/simulation';
 import type { NPCState } from '../../shared/types/npc';
 import type {
@@ -217,7 +218,7 @@ export class LogisticsGrpcClient implements ILogisticsClient {
       const deadline = new Date(Date.now() + this.deadlineMs);
       const callOptions: grpc.CallOptions = { deadline };
 
-      const fn = (client as Record<string, Function>)[method];
+      const fn = (client as unknown as Record<string, Function>)[method];
       if (typeof fn !== 'function') {
         reject(new Error(`gRPC method '${method}' not found on client`));
         return;
@@ -329,12 +330,12 @@ export class LogisticsGrpcClient implements ILogisticsClient {
   /**
    * Map proto ResourceType enum (int) to shared ResourceType string.
    */
-  private convertResourceType(protoType: number): string {
+  private convertResourceType(protoType: number): ResourceType {
     switch (protoType) {
-      case 1: return 'sim';
-      case 2: return 'rapidlum';
-      case 3: return 'mineral';
-      default: return 'unknown';
+      case 1: return ResourceType.SIM;
+      case 2: return ResourceType.RAPIDLUM;
+      case 3: return ResourceType.MINERAL;
+      default: return ResourceType.MINERAL;
     }
   }
 

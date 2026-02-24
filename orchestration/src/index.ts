@@ -33,6 +33,8 @@ import { LogisticsGrpcClient } from './services/logistics-grpc-client';
 import { LogisticsClientRouter } from './services/logistics-client-router';
 import { EpochWebSocketServer } from './services/websocket-server';
 import { HealthAggregator } from './services/health-aggregator';
+import { MemoryIntegration } from './services/memory-integration';
+import { Neo4jMemoryBackend } from './services/neo4j-memory-backend';
 
 // Neural Mesh
 import { CognitiveRails } from './neural-mesh/cognitive-rails';
@@ -48,6 +50,7 @@ config();
 export interface AppDependencies {
   logisticsClient?: ILogisticsClient;
   wsServer?: EpochWebSocketServer;
+  memoryIntegration?: MemoryIntegration;
   mockMode?: boolean;
 }
 
@@ -93,6 +96,9 @@ export function createApp(deps: AppDependencies = {}): AppInstance {
     logisticsClient = new LogisticsClientRouter(grpcClient, httpClient);
   }
 
+  // Memory Integration (optional — null if Neo4j unavailable)
+  const memoryIntegration = deps.memoryIntegration ?? new MemoryIntegration(auditLogger, null);
+
   // Neural Mesh
   const cognitiveRails = new CognitiveRails();
   const coordinator = new NeuralMeshCoordinator(
@@ -103,6 +109,7 @@ export function createApp(deps: AppDependencies = {}): AppInstance {
     cognitiveRails,
     auditLogger,
     wsServer,
+    memoryIntegration,
   );
 
   // Health
@@ -201,9 +208,28 @@ app.post('/api/events/batch', async (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
+// GET /api/status — System status (dashboard polling endpoint)
+// ---------------------------------------------------------------------------
+app.get('/api/status', (_req, res) => {
+  const stats = auditLogger.getStats();
+  res.json({
+    eventsProcessed: stats.totalDecisions,
+    vetoes: 0, // TODO: track separately
+    avgLatencyMs: stats.avgLatencyMs,
+  });
+});
+
+// ---------------------------------------------------------------------------
 // GET /api/audit/recent — Recent audit log entries
+// GET /api/audit — Alias (dashboard compatibility)
 // ---------------------------------------------------------------------------
 app.get('/api/audit/recent', (req, res) => {
+  const count = parseInt(req.query.count as string, 10) || 50;
+  const entries = auditLogger.getRecent(Math.min(count, 1000));
+  res.json({ entries, count: entries.length });
+});
+
+app.get('/api/audit', (req, res) => {
   const count = parseInt(req.query.count as string, 10) || 50;
   const entries = auditLogger.getRecent(Math.min(count, 1000));
   res.json({ entries, count: entries.length });
@@ -228,34 +254,52 @@ const isDirectRun = require.main === module || !module.parent;
 
 if (isDirectRun) {
   const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : PORTS.ORCHESTRATION;
-  const { app, wsServer, grpcClient } = createApp();
 
-  const server = app.listen(PORT, () => {
-    console.log(`[MAX] Neural Mesh Orchestration online — port ${PORT}`);
-    console.log(`[MAX] WebSocket server on port ${wsServer.getPort()}`);
-    console.log(`[MAX] Epoch Engine v${EPOCH_VERSION} — All systems nominal`);
-  });
+  // Initialize with optional Neo4j memory backend
+  (async () => {
+    let memoryIntegration: MemoryIntegration | undefined;
 
-  async function gracefulShutdown(signal: string): Promise<void> {
-    console.log(`[MAX] ${signal} received — initiating graceful shutdown...`);
-
-    if (grpcClient) {
-      try { grpcClient.close(); } catch (err) { console.error('[MAX] gRPC close error:', err); }
+    const NEO4J_URI = process.env.NEO4J_URI;
+    if (NEO4J_URI) {
+      const backend = await Neo4jMemoryBackend.create(
+        NEO4J_URI,
+        process.env.NEO4J_USER || 'neo4j',
+        process.env.NEO4J_PASSWORD || 'epochengine',
+      );
+      if (backend) {
+        memoryIntegration = new MemoryIntegration(new AuditLogger(), backend);
+        console.log('[MAX] Neo4j memory backend connected');
+      }
     }
 
-    try { await wsServer.close(); } catch (err) { console.error('[MAX] WS close error:', err); }
+    const { app, wsServer, grpcClient } = createApp({ memoryIntegration });
 
-    server.close(() => {
-      console.log('[MAX] Express server closed');
-      process.exit(0);
+    const server = app.listen(PORT, () => {
+      console.log(`[MAX] Neural Mesh Orchestration online — port ${PORT}`);
+      console.log(`[MAX] WebSocket server on port ${wsServer.getPort()}`);
+      console.log(`[MAX] Epoch Engine v${EPOCH_VERSION} — All systems nominal`);
     });
 
-    setTimeout(() => { console.error('[MAX] Forced exit'); process.exit(1); }, 10000);
-  }
+    async function gracefulShutdown(signal: string): Promise<void> {
+      console.log(`[MAX] ${signal} received — initiating graceful shutdown...`);
 
-  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+      if (grpcClient) {
+        try { grpcClient.close(); } catch (err) { console.error('[MAX] gRPC close error:', err); }
+      }
+
+      try { await wsServer.close(); } catch (err) { console.error('[MAX] WS close error:', err); }
+
+      server.close(() => {
+        console.log('[MAX] Express server closed');
+        process.exit(0);
+      });
+
+      setTimeout(() => { console.error('[MAX] Forced exit'); process.exit(1); }, 10000);
+    }
+
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+  })();
 }
 
-export { createApp };
 export default createApp;

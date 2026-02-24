@@ -10,6 +10,7 @@
 //   5. Cognitive Rails → validate response (rebellion threshold, coherence, latency)
 //   6. Broadcast → send to appropriate WebSocket channel
 //   7. Audit → log everything to ring buffer
+//   8. Memory → persist to Neo4j (fire-and-forget)
 //
 // If Cognitive Rails VETO:
 //   - Broadcast to 'cognitive-rails' channel
@@ -30,6 +31,7 @@ import { ResilientLLMClient } from '../services/resilient-client';
 import type { ILogisticsClient } from '../services/logistics-client';
 import { AuditLogger } from '../services/audit-logger';
 import { EpochWebSocketServer } from '../services/websocket-server';
+import { MemoryIntegration } from '../services/memory-integration';
 import { CognitiveRails } from './cognitive-rails';
 import type { MeshEvent, MeshResponse, VetoDecision } from './types';
 
@@ -45,6 +47,7 @@ export class NeuralMeshCoordinator {
   private readonly cognitiveRails: CognitiveRails;
   private readonly auditLogger: AuditLogger;
   private readonly wsServer: EpochWebSocketServer;
+  private readonly memoryIntegration: MemoryIntegration | null;
 
   constructor(
     classifier: EventClassifier,
@@ -54,6 +57,7 @@ export class NeuralMeshCoordinator {
     cognitiveRails: CognitiveRails,
     auditLogger: AuditLogger,
     wsServer: EpochWebSocketServer,
+    memoryIntegration?: MemoryIntegration | null,
   ) {
     this.classifier = classifier;
     this.router = router;
@@ -62,6 +66,7 @@ export class NeuralMeshCoordinator {
     this.cognitiveRails = cognitiveRails;
     this.auditLogger = auditLogger;
     this.wsServer = wsServer;
+    this.memoryIntegration = memoryIntegration ?? null;
   }
 
   // ---------------------------------------------------------------------------
@@ -130,6 +135,19 @@ export class NeuralMeshCoordinator {
       this.wsServer.broadcast('rebellion-alerts', veto);
     } else {
       this.wsServer.broadcast('npc-events', response);
+    }
+
+    // Step 8: Persist to Neo4j memory (fire-and-forget, don't block pipeline)
+    if (this.memoryIntegration) {
+      const isVeto = response.vetoApplied;
+      this.memoryIntegration.recordActionOutcome(
+        event.npcId,
+        event.eventType,
+        !isVeto,
+        rebellionCheck.probability,
+      ).catch((err) => {
+        console.warn('[NeuralMeshCoordinator] Memory persist failed (non-blocking):', err);
+      });
     }
 
     return response;
