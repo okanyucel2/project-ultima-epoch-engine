@@ -11,6 +11,8 @@ export { EpochMemoryService } from './epoch-memory-service';
 // Graph layer
 export { Neo4jConnectionPool } from './graph/connection-pool';
 export type { PoolOptions } from './graph/connection-pool';
+export { RetryQueue } from './graph/retry-queue';
+export type { QueuedOperation, RetryQueueOptions } from './graph/retry-queue';
 export { NPCMemoryGraph } from './graph/npc-memory';
 export { ConfidenceManager } from './graph/confidence-edge';
 

@@ -1,8 +1,10 @@
 import neo4j, { Driver, Session, auth } from 'neo4j-driver';
+import { RetryQueue, RetryQueueOptions } from './retry-queue';
 
 // =============================================================================
 // NEO4J CONNECTION POOL
 // Wraps neo4j-driver with session pool management and auto-release patterns.
+// Wave 21B: Integrated RetryQueue for Neo4j outage resilience.
 // =============================================================================
 
 export interface PoolOptions {
@@ -10,6 +12,8 @@ export interface PoolOptions {
   maxSessions?: number;
   /** Timeout in ms to acquire a session from the pool. Default: 5000 */
   acquireTimeoutMs?: number;
+  /** Retry queue options for Neo4j outage fallback. Default: enabled */
+  retryQueue?: RetryQueueOptions | false;
 }
 
 const DEFAULT_MAX_SESSIONS = 10;
@@ -21,6 +25,9 @@ export class Neo4jConnectionPool {
   private readonly acquireTimeoutMs: number;
   private activeSessions: Set<Session>;
   private closed: boolean;
+
+  /** Wave 21B: Ring buffer fallback for Neo4j outages */
+  public readonly retryQueue: RetryQueue | null;
 
   constructor(
     uri: string,
@@ -36,6 +43,23 @@ export class Neo4jConnectionPool {
     this.acquireTimeoutMs = options?.acquireTimeoutMs ?? DEFAULT_ACQUIRE_TIMEOUT_MS;
     this.activeSessions = new Set();
     this.closed = false;
+
+    // Initialize retry queue (Wave 21B)
+    if (options?.retryQueue !== false) {
+      this.retryQueue = new RetryQueue(
+        typeof options?.retryQueue === 'object' ? options.retryQueue : undefined,
+      );
+      this.retryQueue.startAutoFlush(async () => {
+        try {
+          const session = this.driver.session();
+          return session;
+        } catch {
+          return null;
+        }
+      });
+    } else {
+      this.retryQueue = null;
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -82,6 +106,30 @@ export class Neo4jConnectionPool {
   }
 
   // ---------------------------------------------------------------------------
+  // Resilient Operations (Wave 21B)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Execute a Cypher query directly, or queue it for later if Neo4j is down.
+   * Fire-and-forget semantics — does not return query results.
+   * Use for write operations (event recording, memory persistence).
+   */
+  async runOrQueue(query: string, params: Record<string, unknown>): Promise<boolean> {
+    try {
+      await this.withSession(async (session) => {
+        await session.run(query, params);
+      });
+      return true; // Executed immediately
+    } catch {
+      if (this.retryQueue) {
+        this.retryQueue.enqueue(query, params);
+        return false; // Queued for later
+      }
+      throw new Error('Neo4j unavailable and retry queue is disabled');
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // Health & Lifecycle
   // ---------------------------------------------------------------------------
 
@@ -105,6 +153,11 @@ export class Neo4jConnectionPool {
   async close(): Promise<void> {
     if (this.closed) return;
     this.closed = true;
+
+    // Stop retry queue auto-flush (Wave 21B)
+    if (this.retryQueue) {
+      this.retryQueue.stopAutoFlush();
+    }
 
     // Close all active sessions
     const closePromises = Array.from(this.activeSessions).map((session) =>

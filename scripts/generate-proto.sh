@@ -14,10 +14,35 @@ echo "[Proto] Generating code from $PROTO_DIR"
 mkdir -p "$PROJECT_ROOT/orchestration/src/generated"
 mkdir -p "$PROJECT_ROOT/logistics/internal/generated/epochpb"
 
-# Check for buf
+# =========================================================================
+# Phase 21A: Pre-generation validation gate (buf lint)
+# Validates .proto files BEFORE codegen to prevent broken stubs
+# =========================================================================
 if command -v buf &> /dev/null; then
-  echo "[Proto] Using buf for code generation"
+  echo "[Proto] Running buf lint (pre-generation validation)..."
   cd "$PROTO_DIR"
+
+  if ! buf lint 2>&1; then
+    echo ""
+    echo "[Proto] =========================================="
+    echo "[Proto]  PROTOBUF VALIDATION FAILED"
+    echo "[Proto]  Fix lint errors above before generating"
+    echo "[Proto] =========================================="
+    exit 1
+  fi
+  echo "[Proto] Lint passed — all .proto files valid"
+
+  # Breaking change detection (if git history available)
+  if git rev-parse --is-inside-work-tree &>/dev/null 2>&1; then
+    echo "[Proto] Checking for breaking changes..."
+    if buf breaking --against '.git#subdir=shared/proto' 2>/dev/null; then
+      echo "[Proto] No breaking changes detected"
+    else
+      echo "[Proto] WARNING: Breaking changes detected (review before deploying)"
+    fi
+  fi
+
+  echo "[Proto] Using buf for code generation"
   buf generate
   echo "[Proto] Generation complete via buf"
 else

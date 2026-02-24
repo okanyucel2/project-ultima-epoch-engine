@@ -6,8 +6,9 @@ import { fetchSystemStatus, type SystemStatus } from '../api/epoch-api';
 import MetricCard from '../components/MetricCard.vue';
 import TelemetryAlertPanel from '../components/TelemetryAlertPanel.vue';
 import InfestationBar from '../components/InfestationBar.vue';
+import RebellionHeatmap from '../components/RebellionHeatmap.vue';
 
-const { sortedNPCs, loading, error, criticalCount, avgRebellion } = useNPCMonitor();
+const { npcs, sortedNPCs, loading, error, criticalCount, avgRebellion, selectNPC } = useNPCMonitor();
 const { onMessage, offMessage } = useEpochWebSocket(['rebellion-alerts']);
 
 const systemStatus = ref<SystemStatus | null>(null);
@@ -156,6 +157,20 @@ onUnmounted(() => {
           </span>
         </div>
       </div>
+    </div>
+
+    <!-- Wave 21C: Rebellion & Trauma Heatmaps (Prism Effect prevention) -->
+    <div v-if="sortedNPCs.length > 0" class="heatmap-row">
+      <RebellionHeatmap
+        :npcs="npcs"
+        metric="rebellion"
+        @select="selectNPC"
+      />
+      <RebellionHeatmap
+        :npcs="npcs"
+        metric="trauma"
+        @select="selectNPC"
+      />
     </div>
 
     <!-- Telemetry Feed — Mental Breakdowns + Permanent Traumas -->
@@ -342,5 +357,17 @@ onUnmounted(() => {
 
 .state-message--error {
   color: var(--accent-danger);
+}
+
+.heatmap-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .heatmap-row {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
