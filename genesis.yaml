@@ -1,0 +1,35 @@
+# genesis.yaml - Ultima Epoch Engine Configuration
+# GENESIS Process Manager v2.0 (Multi-Service with Explicit Ports)
+#
+# Project: project-ultima-epoch-engine
+# Type: multi-service (Node.js orchestration + Golang logistics + Vue 3 dashboard)
+#
+# Port Allocation (explicit):
+#   - Orchestration (backend): 12064
+#   - Logistics:               12065
+#   - Dashboard (frontend):    22064
+#   - WebSocket:               32064 (started by orchestration)
+#   - Neo4j:                   7474/7687 (managed by Docker)
+
+services:
+  backend:
+    # Neural Mesh Orchestration — Node.js/TypeScript (also starts WebSocket on 32064)
+    start: "cd orchestration && npm run dev"
+    health_check:
+      url: "http://localhost:${PORT}/health"
+      method: GET
+
+  logistics:
+    # Golang logistics backend — rebellion engine, simulation, cleansing
+    port: 12065
+    start: "cd logistics && go run cmd/server/main.go"
+    health_check:
+      url: "http://localhost:12065/health"
+      method: GET
+
+  frontend:
+    # Vue 3 Admin Dashboard — Vite dev server
+    start: "cd dashboard && npm run dev"
+    health_check:
+      url: "http://localhost:${PORT}/"
+      method: GET
