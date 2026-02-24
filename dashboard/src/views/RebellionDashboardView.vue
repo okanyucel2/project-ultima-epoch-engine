@@ -8,7 +8,7 @@ import TelemetryAlertPanel from '../components/TelemetryAlertPanel.vue';
 import InfestationBar from '../components/InfestationBar.vue';
 import RebellionHeatmap from '../components/RebellionHeatmap.vue';
 
-const { npcs, sortedNPCs, loading, error, criticalCount, avgRebellion, selectNPC } = useNPCMonitor();
+const { npcs, sortedNPCs, loading, error, demoMode, criticalCount, avgRebellion, selectNPC } = useNPCMonitor();
 const { onMessage, offMessage } = useEpochWebSocket(['rebellion-alerts']);
 
 const systemStatus = ref<SystemStatus | null>(null);
@@ -77,7 +77,10 @@ onUnmounted(() => {
 
 <template>
   <div class="rebellion-dashboard">
-    <h1 class="view-title">Rebellion Dashboard</h1>
+    <h1 class="view-title">
+      Rebellion Dashboard
+      <span v-if="demoMode" class="demo-badge">DEMO</span>
+    </h1>
 
     <!-- Metrics Row -->
     <div class="metrics-row">
@@ -357,6 +360,17 @@ onUnmounted(() => {
 
 .state-message--error {
   color: var(--accent-danger);
+}
+
+.demo-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  vertical-align: middle;
+  margin-left: 0.5rem;
 }
 
 .heatmap-row {
