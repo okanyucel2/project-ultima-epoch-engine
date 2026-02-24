@@ -3,6 +3,7 @@
   "references": [
     { "path": "./shared" },
     { "path": "./orchestration" },
-    { "path": "./memory" }
+    { "path": "./memory" },
+    { "path": "./packages/engine-bridge" }
   ]
 }

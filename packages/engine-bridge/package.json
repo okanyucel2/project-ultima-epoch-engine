@@ -1,0 +1,24 @@
+{
+  "name": "@epoch/engine-bridge",
+  "version": "0.1.0",
+  "description": "Engine-agnostic adapter SDK — dispatches WebSocket NPC events to Godot/UE5 exporters with Zod type safety",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "check": "tsc --noEmit",
+    "test": "jest"
+  },
+  "dependencies": {
+    "zod": "^3.22.4",
+    "ws": "^8.16.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.5",
+    "@types/ws": "^8.5.10",
+    "@types/jest": "^29.5.11",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.2",
+    "typescript": "^5.3.3"
+  }
+}
