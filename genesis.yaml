@@ -18,6 +18,43 @@ restart_policy:
   restart_delay: 3         # seconds to wait before restarting
   memory_limit_mb: 512     # RSS threshold — restart if exceeded
 
+preflight:
+  requirements:
+    node:
+      min_version: "20.0.0"
+      install_hint: "brew install node@20  # or: nvm install 20"
+    go:
+      min_version: "1.24.0"
+      install_hint: "brew install go"
+    docker:
+      required: true
+      install_hint: "brew install --cask docker"
+    buf:
+      required: false
+      install_hint: "brew install bufbuild/buf/buf"
+
+  env:
+    env_templates:
+      - path: "orchestration"
+        example: ".env.example"
+    critical_vars:
+      - name: "ANTHROPIC_API_KEY"
+        severity: "warn"
+        services: ["backend"]
+
+  dependencies:
+    auto_bootstrap: true
+    node_packages:
+      - "orchestration"
+      - "dashboard"
+      - "shared"
+      - "memory"
+    go_modules:
+      - "logistics"
+    proto_stubs:
+      check_dir: "orchestration/src/generated"
+      generate_cmd: "scripts/generate-proto.sh"
+
 services:
   backend:
     # Neural Mesh Orchestration — Node.js/TypeScript (also starts WebSocket on 32064)
