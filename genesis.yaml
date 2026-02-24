@@ -11,6 +11,13 @@
 #   - WebSocket:               32064 (started by orchestration)
 #   - Neo4j:                   7474/7687 (managed by Docker)
 
+# Global restart policy defaults (overridable per service)
+restart_policy:
+  max_restarts: 5          # max restarts within restart_window
+  restart_window: 300      # 5-minute sliding window (seconds)
+  restart_delay: 3         # seconds to wait before restarting
+  memory_limit_mb: 512     # RSS threshold — restart if exceeded
+
 services:
   backend:
     # Neural Mesh Orchestration — Node.js/TypeScript (also starts WebSocket on 32064)
@@ -18,6 +25,12 @@ services:
     health_check:
       url: "http://localhost:${PORT}/health"
       method: GET
+      interval: 30         # seconds between watchdog health checks
+      timeout: 5           # seconds per health check request
+      max_failures: 3      # consecutive failures before auto-restart
+    restart_policy:
+      max_restarts: 5
+      memory_limit_mb: 512
 
   logistics:
     # Golang logistics backend — rebellion engine, simulation, cleansing
@@ -26,6 +39,12 @@ services:
     health_check:
       url: "http://localhost:12065/health"
       method: GET
+      interval: 30
+      timeout: 5
+      max_failures: 3
+    restart_policy:
+      max_restarts: 5
+      memory_limit_mb: 256
 
   frontend:
     # Vue 3 Admin Dashboard — Vite dev server
@@ -33,3 +52,9 @@ services:
     health_check:
       url: "http://localhost:${PORT}/"
       method: GET
+      interval: 30
+      timeout: 5
+      max_failures: 3
+    restart_policy:
+      max_restarts: 3
+      memory_limit_mb: 256
