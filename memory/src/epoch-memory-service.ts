@@ -1,8 +1,8 @@
 import { v4 as uuidv4 } from 'uuid';
-import { DecayStrategy } from '../../shared/types/memory';
-import type { DecayConfig, NPCProfile } from '../../shared/types/memory';
-import { createTimestamp } from '../../shared/types/common';
-import { REBELLION_THRESHOLDS } from '../../shared/types/npc';
+import { DecayStrategy } from '@epoch/shared/memory';
+import type { DecayConfig, NPCProfile } from '@epoch/shared/memory';
+import { createTimestamp } from '@epoch/shared/common';
+import { REBELLION_THRESHOLDS } from '@epoch/shared/npc';
 import { Neo4jConnectionPool } from './graph/connection-pool';
 import { NPCMemoryGraph } from './graph/npc-memory';
 import { ConfidenceManager } from './graph/confidence-edge';

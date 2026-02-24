@@ -13,8 +13,8 @@ import {
   ProviderType,
   CircuitBreakerConfig,
   DEFAULT_TIER_MODELS,
-} from '../../shared/types/ai-router';
-import { ErrorCode, EpochError } from '../../shared/types/common';
+} from '@epoch/shared/ai-router';
+import { ErrorCode, EpochError } from '@epoch/shared/common';
 import { ProviderCircuitBreaker } from './circuit-breaker';
 import { ModelRegistry } from './model-registry';
 

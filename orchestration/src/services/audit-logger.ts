@@ -6,7 +6,7 @@
 // Provides stats: total decisions, failover count, avg latency, tier breakdown.
 // =============================================================================
 
-import { EventTier, AuditLogEntry } from '../../shared/types/ai-router';
+import { EventTier, AuditLogEntry } from '@epoch/shared/ai-router';
 
 export interface AuditStats {
   totalDecisions: number;

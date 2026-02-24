@@ -11,7 +11,7 @@
 // =============================================================================
 
 import { v4 as uuidv4 } from 'uuid';
-import type { NPCAction } from '../../shared/types/npc';
+import type { NPCAction } from '@epoch/shared/npc';
 import { NeuralMeshCoordinator } from '../neural-mesh/coordinator';
 import type { MeshEvent, MeshResponse } from '../neural-mesh/types';
 

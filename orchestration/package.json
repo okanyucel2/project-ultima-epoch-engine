@@ -4,10 +4,11 @@
   "description": "MAX Orchestrator — Neural Mesh AI coordination for Project Ultima: Epoch Engine",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "ts-node-dev --respawn src/index.ts",
-    "build": "tsc",
+    "dev": "ts-node-dev -r tsconfig-paths/register --respawn src/index.ts",
+    "build": "tsc -b ..",
     "start": "node dist/index.js",
-    "test": "jest"
+    "test": "jest",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
@@ -33,6 +34,7 @@
     "ts-jest": "^29.1.2",
     "ts-node-dev": "^2.0.0",
     "ts-proto": "^1.174.0",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.3.3"
   }
 }

@@ -4,7 +4,7 @@ import {
   ProviderType,
   ProviderConfig,
   DEFAULT_TIER_MODELS,
-} from '../../shared/types/ai-router';
+} from '@epoch/shared/ai-router';
 
 describe('ModelRegistry', () => {
   let registry: ModelRegistry;

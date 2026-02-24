@@ -5,8 +5,8 @@ import {
   EventTier,
   ProviderType,
   CircuitBreakerConfig,
-} from '../../shared/types/ai-router';
-import { ErrorCode, EpochError } from '../../shared/types/common';
+} from '@epoch/shared/ai-router';
+import { ErrorCode, EpochError } from '@epoch/shared/common';
 
 describe('TierRouter', () => {
   let router: TierRouter;

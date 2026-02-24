@@ -2,7 +2,7 @@ import { ResilientLLMClient, LLMResponse, CompletionOptions } from '../src/servi
 import { TierRouter } from '../src/services/tier-router';
 import { ModelRegistry } from '../src/services/model-registry';
 import { AuditLogger } from '../src/services/audit-logger';
-import { EventTier, ProviderType, CircuitBreakerConfig } from '../../shared/types/ai-router';
+import { EventTier, ProviderType, CircuitBreakerConfig } from '@epoch/shared/ai-router';
 
 describe('ResilientLLMClient', () => {
   let client: ResilientLLMClient;

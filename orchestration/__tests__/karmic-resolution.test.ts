@@ -3,7 +3,7 @@
 // =============================================================================
 
 import { applyKarmicResolution } from '../src/services/karmic-resolution';
-import type { CleansingResult } from '../../shared/types/cleansing';
+import type { CleansingResult } from '@epoch/shared/cleansing';
 import type { MemoryIntegration } from '../src/services/memory-integration';
 import type { EpochWebSocketServer } from '../src/services/websocket-server';
 

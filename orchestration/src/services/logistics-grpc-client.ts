@@ -16,10 +16,10 @@
 
 import * as grpc from '@grpc/grpc-js';
 import type { ServiceError } from '@grpc/grpc-js';
-import { ResourceType } from '../../shared/types/simulation';
-import type { SimulationStatus } from '../../shared/types/simulation';
-import type { NPCState } from '../../shared/types/npc';
-import type { CleansingResult } from '../../shared/types/cleansing';
+import { ResourceType } from '@epoch/shared/simulation';
+import type { SimulationStatus } from '@epoch/shared/simulation';
+import type { NPCState } from '@epoch/shared/npc';
+import type { CleansingResult } from '@epoch/shared/cleansing';
 import type {
   ILogisticsClient,
   RebellionProbabilityResponse,

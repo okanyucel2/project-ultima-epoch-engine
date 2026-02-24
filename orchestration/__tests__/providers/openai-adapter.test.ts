@@ -6,7 +6,7 @@ jest.mock('openai');
 
 import OpenAI from 'openai';
 import { OpenAIAdapter } from '../../src/services/providers/openai-adapter';
-import { EpochError, ErrorCode } from '../../shared/types/common';
+import { EpochError, ErrorCode } from '@epoch/shared/common';
 
 describe('OpenAIAdapter', () => {
   let mockCreate: jest.Mock;

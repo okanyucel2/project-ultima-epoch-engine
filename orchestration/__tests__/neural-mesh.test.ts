@@ -11,7 +11,7 @@ import { AuditLogger } from '../src/services/audit-logger';
 import { ModelRegistry } from '../src/services/model-registry';
 import { LogisticsClient } from '../src/services/logistics-client';
 import { EpochWebSocketServer } from '../src/services/websocket-server';
-import { EventTier } from '../../shared/types/ai-router';
+import { EventTier } from '@epoch/shared/ai-router';
 import type { MeshEvent } from '../src/neural-mesh/types';
 
 // =============================================================================

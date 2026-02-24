@@ -6,7 +6,7 @@ jest.mock('@anthropic-ai/sdk');
 
 import Anthropic from '@anthropic-ai/sdk';
 import { AnthropicAdapter } from '../../src/services/providers/anthropic-adapter';
-import { EpochError, ErrorCode } from '../../shared/types/common';
+import { EpochError, ErrorCode } from '@epoch/shared/common';
 
 describe('AnthropicAdapter', () => {
   let mockCreate: jest.Mock;

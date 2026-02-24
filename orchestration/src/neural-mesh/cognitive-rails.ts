@@ -19,7 +19,7 @@
 // =============================================================================
 
 import { z } from 'zod';
-import { REBELLION_THRESHOLDS } from '../../shared/types/npc';
+import { REBELLION_THRESHOLDS } from '@epoch/shared/npc';
 import type { CognitiveRailResult } from './types';
 
 // =============================================================================

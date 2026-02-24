@@ -2,7 +2,7 @@
 // Provider Adapter Types — Contract for real LLM provider integrations
 // =============================================================================
 
-import type { ProviderType } from '../../../shared/types/ai-router';
+import type { ProviderType } from '@epoch/shared/ai-router';
 import type { CompletionOptions } from '../resilient-client';
 
 export interface ProviderCompletionResult {

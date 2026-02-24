@@ -6,7 +6,7 @@
 //   Failure: Survivor's Guilt — permanent trauma, Director confidence hit
 // =============================================================================
 
-import type { CleansingResult } from '../../shared/types/cleansing';
+import type { CleansingResult } from '@epoch/shared/cleansing';
 import type { MemoryIntegration } from './memory-integration';
 import type { EpochWebSocketServer } from './websocket-server';
 

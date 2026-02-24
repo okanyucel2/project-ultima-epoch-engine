@@ -9,10 +9,10 @@
 
 import neo4j, { Driver, Session, Integer, auth } from 'neo4j-driver';
 import { v4 as uuidv4 } from 'uuid';
-import { createTimestamp } from '../../shared/types/common';
+import { createTimestamp } from '@epoch/shared/common';
 import type { IMemoryBackend } from './memory-integration';
-import type { WisdomScore, TraumaScore, ConfidenceEdge } from '../../shared/types/memory';
-import type { EpochTimestamp } from '../../shared/types/common';
+import type { WisdomScore, TraumaScore, ConfidenceEdge } from '@epoch/shared/memory';
+import type { EpochTimestamp } from '@epoch/shared/common';
 
 /** Convert Neo4j Integer to JS number */
 function toNumber(value: unknown): number {

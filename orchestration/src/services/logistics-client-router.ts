@@ -10,9 +10,9 @@
 //   - lastError: most recent gRPC error message
 // =============================================================================
 
-import type { SimulationStatus } from '../../shared/types/simulation';
-import type { NPCState } from '../../shared/types/npc';
-import type { CleansingResult } from '../../shared/types/cleansing';
+import type { SimulationStatus } from '@epoch/shared/simulation';
+import type { NPCState } from '@epoch/shared/npc';
+import type { CleansingResult } from '@epoch/shared/cleansing';
 import type {
   ILogisticsClient,
   RebellionProbabilityResponse,

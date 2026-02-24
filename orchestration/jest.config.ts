@@ -14,7 +14,8 @@ const config: Config = {
     }],
   },
   moduleNameMapper: {
-    '^(.*)\\.\\./\\.\\./shared/types/(.*)$': path.resolve(__dirname, '../shared/types/$2'),
+    '^@epoch/shared/(.*)$': path.resolve(__dirname, '../shared/types/$1'),
+    '^@epoch/shared$': path.resolve(__dirname, '../shared/types/index'),
   },
   collectCoverageFrom: [
     'src/**/*.ts',

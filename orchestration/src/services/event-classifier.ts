@@ -12,7 +12,7 @@
 // =============================================================================
 
 import { z } from 'zod';
-import { EventTier } from '../../shared/types/ai-router';
+import { EventTier } from '@epoch/shared/ai-router';
 
 // =============================================================================
 // GameEvent Schema (Zod-validated)

@@ -17,7 +17,7 @@
 
 import express from 'express';
 import { config } from 'dotenv';
-import { PORTS, EPOCH_VERSION } from '../../shared/types/common';
+import { PORTS, EPOCH_VERSION } from '@epoch/shared/common';
 
 // Services (Wave 2A)
 import {

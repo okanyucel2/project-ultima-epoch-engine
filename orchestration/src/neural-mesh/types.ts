@@ -2,8 +2,8 @@
 // Neural Mesh Types — Coordinator pipeline data structures
 // =============================================================================
 
-import { EventTier } from '../../shared/types/ai-router';
-import type { EpochTimestamp } from '../../shared/types/common';
+import { EventTier } from '@epoch/shared/ai-router';
+import type { EpochTimestamp } from '@epoch/shared/common';
 
 // =============================================================================
 // MeshEvent — Input to the Neural Mesh pipeline

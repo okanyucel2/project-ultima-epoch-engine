@@ -1,9 +1,9 @@
 import neo4j from 'neo4j-driver';
 import { v4 as uuidv4 } from 'uuid';
-import { createTimestamp } from '../../../shared/types/common';
-import { DecayStrategy } from '../../../shared/types/memory';
-import type { MemoryNode, DecayConfig } from '../../../shared/types/memory';
-import type { NPCState } from '../../../shared/types/npc';
+import { createTimestamp } from '@epoch/shared/common';
+import { DecayStrategy } from '@epoch/shared/memory';
+import type { MemoryNode, DecayConfig } from '@epoch/shared/memory';
+import type { NPCState } from '@epoch/shared/npc';
 import { TraumaScorer } from '../trauma/trauma-scorer';
 import type { Neo4jConnectionPool } from './connection-pool';
 

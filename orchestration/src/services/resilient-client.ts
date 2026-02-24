@@ -17,8 +17,8 @@ import {
   AuditLogEntry,
   RoutingDecision,
   CircuitState,
-} from '../../shared/types/ai-router';
-import { createTimestamp, EpochError, ErrorCode } from '../../shared/types/common';
+} from '@epoch/shared/ai-router';
+import { createTimestamp, EpochError, ErrorCode } from '@epoch/shared/common';
 import { TierRouter } from './tier-router';
 import { AuditLogger } from './audit-logger';
 import { ProviderAdapterFactory } from './providers/adapter-factory';

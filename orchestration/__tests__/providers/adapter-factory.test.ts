@@ -7,7 +7,7 @@ jest.mock('openai');
 
 import { ProviderAdapterFactory } from '../../src/services/providers/adapter-factory';
 import { ModelRegistry } from '../../src/services/model-registry';
-import { ProviderType } from '../../shared/types/ai-router';
+import { ProviderType } from '@epoch/shared/ai-router';
 
 describe('ProviderAdapterFactory', () => {
   const originalEnv = process.env;

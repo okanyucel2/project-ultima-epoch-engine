@@ -1,6 +1,6 @@
-import { ActionType } from '../../../shared/types/npc';
-import { createTimestamp } from '../../../shared/types/common';
-import type { ConfidenceEdge } from '../../../shared/types/memory';
+import { ActionType } from '@epoch/shared/npc';
+import { createTimestamp } from '@epoch/shared/common';
+import type { ConfidenceEdge } from '@epoch/shared/memory';
 import type { Neo4jConnectionPool } from './connection-pool';
 
 // =============================================================================

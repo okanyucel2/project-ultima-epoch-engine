@@ -3,8 +3,8 @@
 // =============================================================================
 
 import OpenAI from 'openai';
-import { EpochError, ErrorCode } from '../../../shared/types/common';
-import { ProviderType } from '../../../shared/types/ai-router';
+import { EpochError, ErrorCode } from '@epoch/shared/common';
+import { ProviderType } from '@epoch/shared/ai-router';
 import type { CompletionOptions } from '../resilient-client';
 import type { ProviderAdapter, ProviderCompletionResult } from './types';
 

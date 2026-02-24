@@ -22,8 +22,8 @@
 // =============================================================================
 
 import { v4 as uuidv4 } from 'uuid';
-import { EventTier } from '../../shared/types/ai-router';
-import { createTimestamp } from '../../shared/types/common';
+import { EventTier } from '@epoch/shared/ai-router';
+import { createTimestamp } from '@epoch/shared/common';
 import { EventClassifier } from '../services/event-classifier';
 import type { GameEvent } from '../services/event-classifier';
 import { TierRouter } from '../services/tier-router';

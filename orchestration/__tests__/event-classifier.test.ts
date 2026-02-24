@@ -1,5 +1,5 @@
 import { EventClassifier, GameEvent } from '../src/services/event-classifier';
-import { EventTier } from '../../shared/types/ai-router';
+import { EventTier } from '@epoch/shared/ai-router';
 
 describe('EventClassifier', () => {
   let classifier: EventClassifier;

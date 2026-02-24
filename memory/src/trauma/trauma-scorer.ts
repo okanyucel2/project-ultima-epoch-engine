@@ -1,6 +1,6 @@
-import { DecayStrategy } from '../../../shared/types/memory';
-import type { DecayConfig, TraumaScore } from '../../../shared/types/memory';
-import { createTimestamp } from '../../../shared/types/common';
+import { DecayStrategy } from '@epoch/shared/memory';
+import type { DecayConfig, TraumaScore } from '@epoch/shared/memory';
+import { createTimestamp } from '@epoch/shared/common';
 import { applyDecay } from './decay-functions';
 import { QUERY_ALL_MEMORIES } from '../wisdom/wisdom-queries';
 import type { Neo4jConnectionPool } from '../graph/connection-pool';

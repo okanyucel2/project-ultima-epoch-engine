@@ -14,7 +14,7 @@ import {
   CircuitState,
   CircuitBreakerConfig,
   CircuitBreakerConfigSchema,
-} from '../../shared/types/ai-router';
+} from '@epoch/shared/ai-router';
 
 export class ProviderCircuitBreaker {
   private state: CircuitState = CircuitState.CLOSED;

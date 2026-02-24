@@ -1,5 +1,5 @@
 import { ProviderCircuitBreaker } from '../src/services/circuit-breaker';
-import { CircuitState, CircuitBreakerConfig } from '../../shared/types/ai-router';
+import { CircuitState, CircuitBreakerConfig } from '@epoch/shared/ai-router';
 
 describe('ProviderCircuitBreaker', () => {
   let breaker: ProviderCircuitBreaker;

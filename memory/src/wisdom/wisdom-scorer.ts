@@ -1,5 +1,5 @@
-import type { WisdomScore } from '../../../shared/types/memory';
-import { createTimestamp } from '../../../shared/types/common';
+import type { WisdomScore } from '@epoch/shared/memory';
+import { createTimestamp } from '@epoch/shared/common';
 import {
   QUERY_MEMORY_COUNT,
   QUERY_EVENT_DIVERSITY,

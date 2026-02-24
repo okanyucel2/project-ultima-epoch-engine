@@ -1,5 +1,5 @@
-import { DecayStrategy } from '../../../shared/types/memory';
-import type { DecayConfig } from '../../../shared/types/memory';
+import { DecayStrategy } from '@epoch/shared/memory';
+import type { DecayConfig } from '@epoch/shared/memory';
 
 // =============================================================================
 // DECAY FUNCTIONS — Pure mathematical functions for time-based score decay

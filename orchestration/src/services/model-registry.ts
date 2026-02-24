@@ -14,7 +14,7 @@ import {
   ProviderType,
   ModelConfig,
   ProviderConfig,
-} from '../../shared/types/ai-router';
+} from '@epoch/shared/ai-router';
 
 // =============================================================================
 // Default Provider Configurations

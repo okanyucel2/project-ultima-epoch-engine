@@ -5,10 +5,10 @@
 import { MemoryIntegration } from '../src/services/memory-integration';
 import type { IMemoryBackend } from '../src/services/memory-integration';
 import { AuditLogger } from '../src/services/audit-logger';
-import { EventTier, ProviderType } from '../../shared/types/ai-router';
-import type { RoutingDecision } from '../../shared/types/ai-router';
-import { createTimestamp } from '../../shared/types/common';
-import { DecayStrategy } from '../../shared/types/memory';
+import { EventTier, ProviderType } from '@epoch/shared/ai-router';
+import type { RoutingDecision } from '@epoch/shared/ai-router';
+import { createTimestamp } from '@epoch/shared/common';
+import { DecayStrategy } from '@epoch/shared/memory';
 
 // =============================================================================
 // Mock memory backend

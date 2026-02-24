@@ -5,8 +5,8 @@
 // Missing keys → warning + provider uses mock fallback (no crash).
 // =============================================================================
 
-import { ProviderType } from '../../../shared/types/ai-router';
-import type { ProviderConfig } from '../../../shared/types/ai-router';
+import { ProviderType } from '@epoch/shared/ai-router';
+import type { ProviderConfig } from '@epoch/shared/ai-router';
 import { ModelRegistry } from '../model-registry';
 import type { ProviderAdapter } from './types';
 import { AnthropicAdapter } from './anthropic-adapter';

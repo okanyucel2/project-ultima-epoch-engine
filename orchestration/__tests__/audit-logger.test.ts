@@ -5,8 +5,8 @@ import {
   CircuitState,
   AuditLogEntry,
   RoutingDecision,
-} from '../../shared/types/ai-router';
-import { createTimestamp } from '../../shared/types/common';
+} from '@epoch/shared/ai-router';
+import { createTimestamp } from '@epoch/shared/common';
 import { v4 as uuidv4 } from 'uuid';
 
 function makeEntry(overrides: Partial<AuditLogEntry> = {}): AuditLogEntry {

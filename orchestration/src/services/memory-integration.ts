@@ -14,9 +14,9 @@
 //   - Provide NPC context for AI prompt enrichment
 // =============================================================================
 
-import type { RoutingDecision } from '../../shared/types/ai-router';
-import type { WisdomScore, TraumaScore, ConfidenceEdge } from '../../shared/types/memory';
-import type { EpochTimestamp } from '../../shared/types/common';
+import type { RoutingDecision } from '@epoch/shared/ai-router';
+import type { WisdomScore, TraumaScore, ConfidenceEdge } from '@epoch/shared/memory';
+import type { EpochTimestamp } from '@epoch/shared/common';
 import { AuditLogger } from './audit-logger';
 
 // =============================================================================
