@@ -1,0 +1,139 @@
+syntax = "proto3";
+
+package epoch.telemetry;
+
+import "common.proto";
+import "npc.proto";
+
+option go_package = "github.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/generated/epochpb";
+
+// =============================================================================
+// TELEMETRY — 0ms Event Stream for NPC Psychological & Physical State Changes
+// =============================================================================
+// Carries two categories of millisecond-precision events:
+//
+//   1. Mental Breakdowns (The Alters model)
+//      Acute psychological events: stress spikes, dissociation, paranoia onset.
+//      These are transient — they can resolve with proper intervention.
+//
+//   2. Permanent Traumas (Battle Brothers model)
+//      Irreversible state changes: limb loss, PTSD, phobias.
+//      These permanently alter NPC capabilities and behavior.
+//
+// Events are emitted by the Go simulation engine and streamed to the TS
+// orchestration layer via gRPC server-streaming, then broadcast to the
+// dashboard via WebSocket for real-time karmic feedback visualization.
+// =============================================================================
+
+// ---------------------------------------------------------------------------
+// Severity — determines dashboard visual urgency + AEGIS response tier
+// ---------------------------------------------------------------------------
+enum TelemetrySeverity {
+  TELEMETRY_SEVERITY_UNSPECIFIED = 0;
+  TELEMETRY_SEVERITY_INFO = 1;         // Normal telemetry pulse
+  TELEMETRY_SEVERITY_WARNING = 2;      // Elevated concern, monitor closely
+  TELEMETRY_SEVERITY_CRITICAL = 3;     // Immediate AEGIS attention required
+  TELEMETRY_SEVERITY_CATASTROPHIC = 4; // System-wide impact, NPC unrecoverable
+}
+
+// ---------------------------------------------------------------------------
+// Mental Breakdown Types — The Alters model (transient, recoverable)
+// ---------------------------------------------------------------------------
+enum MentalBreakdownType {
+  MENTAL_BREAKDOWN_UNSPECIFIED = 0;
+  MENTAL_BREAKDOWN_STRESS_SPIKE = 1;        // Acute pressure overload
+  MENTAL_BREAKDOWN_PSYCHOLOGICAL_FRACTURE = 2; // Cognitive split / dissociation
+  MENTAL_BREAKDOWN_IDENTITY_CRISIS = 3;     // NPC questions purpose/role
+  MENTAL_BREAKDOWN_PARANOIA_ONSET = 4;      // Distrust of director/peers
+  MENTAL_BREAKDOWN_DISSOCIATION = 5;        // Emotional detachment from reality
+  MENTAL_BREAKDOWN_RAGE_EPISODE = 6;        // Uncontrolled aggression burst
+}
+
+// ---------------------------------------------------------------------------
+// Permanent Trauma Types — Battle Brothers model (irreversible)
+// ---------------------------------------------------------------------------
+enum PermanentTraumaType {
+  PERMANENT_TRAUMA_UNSPECIFIED = 0;
+  PERMANENT_TRAUMA_LIMB_LOSS = 1;           // Physical injury → -work_efficiency
+  PERMANENT_TRAUMA_MORALE_COLLAPSE = 2;     // Irreversible morale floor
+  PERMANENT_TRAUMA_PTSD = 3;                // Flashback triggers in similar contexts
+  PERMANENT_TRAUMA_SURVIVORS_GUILT = 4;     // After witnessing comrade death
+  PERMANENT_TRAUMA_PHOBIA = 5;              // Fear of specific condition (mines, combat)
+  PERMANENT_TRAUMA_BRAIN_DAMAGE = 6;        // Cognitive impairment → -wisdom_score
+}
+
+// ---------------------------------------------------------------------------
+// Mental Breakdown Event — transient psychological crisis
+// ---------------------------------------------------------------------------
+message MentalBreakdownEvent {
+  MentalBreakdownType type = 1;
+  double intensity = 2;            // 0.0 - 1.0 severity within type
+  double stress_before = 3;        // Stress level before event
+  double stress_after = 4;         // Stress level after event
+  string trigger_context = 5;      // What caused it (action_id, env event, etc.)
+  bool resolved = 6;               // True if NPC recovered (set later via update)
+  double recovery_probability = 7; // Estimated chance of natural recovery
+}
+
+// ---------------------------------------------------------------------------
+// Permanent Trauma Event — irreversible state change
+// ---------------------------------------------------------------------------
+message PermanentTraumaEvent {
+  PermanentTraumaType type = 1;
+  double severity = 2;                     // 0.0 - 1.0 how severe
+  string affected_attribute = 3;           // Which NPC stat is permanently reduced
+  double attribute_reduction = 4;          // How much the stat is reduced (absolute)
+  string trigger_context = 5;              // What caused it
+  string phobia_target = 6;               // Only for PHOBIA type: what they fear
+  epoch.common.EpochTimestamp inflicted_at = 7;
+}
+
+// ---------------------------------------------------------------------------
+// Telemetry Event — the unified event wrapper
+// ---------------------------------------------------------------------------
+message TelemetryEvent {
+  string event_id = 1;                     // Unique telemetry event ID
+  string npc_id = 2;                       // Affected NPC
+  TelemetrySeverity severity = 3;          // Visual urgency tier
+  epoch.common.EpochTimestamp timestamp = 4; // Millisecond-precision emission time
+
+  // Exactly one of these will be set per event
+  oneof payload {
+    MentalBreakdownEvent mental_breakdown = 10;
+    PermanentTraumaEvent permanent_trauma = 11;
+    StateChangeEvent state_change = 12;
+  }
+
+  // Post-event NPC snapshot (optional — included for dashboard rendering)
+  epoch.npc.NPCState npc_snapshot = 20;
+}
+
+// ---------------------------------------------------------------------------
+// State Change Event — general NPC stat delta (non-trauma, non-breakdown)
+// ---------------------------------------------------------------------------
+message StateChangeEvent {
+  string attribute = 1;            // "morale", "work_efficiency", "trauma_score", etc.
+  double old_value = 2;
+  double new_value = 3;
+  string cause = 4;                // Human-readable cause
+}
+
+// ---------------------------------------------------------------------------
+// Telemetry Batch — for bulk delivery (batch tick results)
+// ---------------------------------------------------------------------------
+message TelemetryBatch {
+  repeated TelemetryEvent events = 1;
+  int64 tick_number = 2;
+  epoch.common.EpochTimestamp batch_timestamp = 3;
+}
+
+// ---------------------------------------------------------------------------
+// Telemetry Filter — for stream subscription
+// ---------------------------------------------------------------------------
+message TelemetryFilter {
+  repeated string npc_ids = 1;                  // Empty = all NPCs
+  TelemetrySeverity min_severity = 2;           // Only events >= this severity
+  bool include_state_changes = 3;               // Include general stat deltas
+  bool include_mental_breakdowns = 4;           // Include The Alters events
+  bool include_permanent_traumas = 5;           // Include Battle Brothers events
+}

@@ -18,8 +18,8 @@ import (
 // DefaultGRPCPort is the default port for the gRPC server.
 const DefaultGRPCPort = "12066"
 
-// EpochGRPCServer wraps a gRPC server that hosts the RebellionService
-// and SimulationService for the Epoch Engine logistics backend.
+// EpochGRPCServer wraps a gRPC server that hosts the RebellionService,
+// SimulationService, and TelemetryService for the Epoch Engine logistics backend.
 type EpochGRPCServer struct {
 	port             string
 	grpcServer       *grpc.Server
@@ -27,6 +27,7 @@ type EpochGRPCServer struct {
 	simulationEngine *simulation.SimulationEngine
 	behaviorEngine   *npc.BehaviorEngine
 	listener         net.Listener
+	TelemetrySvc     *telemetryService // Exported for direct event emission
 }
 
 // NewEpochGRPCServer creates a new gRPC server configured with the given engines.
@@ -40,11 +41,13 @@ func NewEpochGRPCServer(
 	if port == "" {
 		port = DefaultGRPCPort
 	}
+	telSvc := NewTelemetryService(rebellionEngine, behaviorEngine)
 	return &EpochGRPCServer{
 		port:             port,
 		rebellionEngine:  rebellionEngine,
 		simulationEngine: simulationEngine,
 		behaviorEngine:   behaviorEngine,
+		TelemetrySvc:     telSvc,
 	}
 }
 
@@ -69,10 +72,14 @@ func (s *EpochGRPCServer) Start() error {
 	simulationSvc := NewSimulationService(s.simulationEngine)
 	pb.RegisterSimulationServiceServer(s.grpcServer, simulationSvc)
 
+	// Register Telemetry service (0ms event stream)
+	pb.RegisterTelemetryServiceServer(s.grpcServer, s.TelemetrySvc)
+
 	// Register gRPC health check service
 	healthServer := health.NewServer()
 	healthServer.SetServingStatus("epoch.RebellionService", healthpb.HealthCheckResponse_SERVING)
 	healthServer.SetServingStatus("epoch.SimulationService", healthpb.HealthCheckResponse_SERVING)
+	healthServer.SetServingStatus("epoch.TelemetryService", healthpb.HealthCheckResponse_SERVING)
 	healthServer.SetServingStatus("", healthpb.HealthCheckResponse_SERVING) // overall
 	healthpb.RegisterHealthServer(s.grpcServer, healthServer)
 

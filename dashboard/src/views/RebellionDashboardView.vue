@@ -4,6 +4,7 @@ import { useNPCMonitor } from '../composables/useNPCMonitor';
 import { useEpochWebSocket, type WebSocketMessage } from '../composables/useEpochWebSocket';
 import { fetchSystemStatus, type SystemStatus } from '../api/epoch-api';
 import MetricCard from '../components/MetricCard.vue';
+import TelemetryAlertPanel from '../components/TelemetryAlertPanel.vue';
 
 const { sortedNPCs, loading, error, criticalCount, avgRebellion } = useNPCMonitor();
 const { onMessage, offMessage } = useEpochWebSocket(['rebellion-alerts']);
@@ -152,6 +153,9 @@ onUnmounted(() => {
         </div>
       </div>
     </div>
+
+    <!-- Telemetry Feed — Mental Breakdowns + Permanent Traumas -->
+    <TelemetryAlertPanel />
 
     <!-- Recent Rebellion Alerts -->
     <div class="glass-card alerts-panel">

@@ -28,6 +28,7 @@ import type {
 import {
   RebellionServiceClient,
   SimulationServiceClient,
+  TelemetryServiceClient,
 } from '../generated/epoch';
 import type {
   RebellionRequest,
@@ -37,7 +38,13 @@ import type {
   SimStatusRequest,
   AdvanceRequest,
   AdvanceResponse,
+  RecentTelemetryRequest,
 } from '../generated/epoch';
+import type {
+  TelemetryEvent,
+  TelemetryBatch,
+  TelemetryFilter,
+} from '../generated/telemetry';
 import type {
   SimulationStatus as ProtoSimulationStatus,
 } from '../generated/simulation';
@@ -74,10 +81,14 @@ const GRPC_STATUS_DESCRIPTIONS: Record<number, string> = {
 // LogisticsGrpcClient Class
 // =============================================================================
 
+export type TelemetryEventHandler = (event: TelemetryEvent) => void;
+
 export class LogisticsGrpcClient implements ILogisticsClient {
   private readonly rebellionClient: RebellionServiceClient;
   private readonly simulationClient: SimulationServiceClient;
+  private readonly telemetryClient: TelemetryServiceClient;
   private readonly deadlineMs: number;
+  private telemetryStream: grpc.ClientReadableStream<TelemetryEvent> | null = null;
 
   constructor(
     host: string = 'localhost:12066',
@@ -86,6 +97,7 @@ export class LogisticsGrpcClient implements ILogisticsClient {
     const credentials = grpc.credentials.createInsecure();
     this.rebellionClient = new RebellionServiceClient(host, credentials);
     this.simulationClient = new SimulationServiceClient(host, credentials);
+    this.telemetryClient = new TelemetryServiceClient(host, credentials);
     this.deadlineMs = deadlineMs;
   }
 
@@ -194,11 +206,74 @@ export class LogisticsGrpcClient implements ILogisticsClient {
   }
 
   /**
+   * Subscribe to real-time telemetry stream from the Go logistics backend.
+   * Events are delivered to the handler with 0ms tolerance (as fast as gRPC delivers).
+   * Returns a function to cancel the stream subscription.
+   */
+  subscribeTelemetry(
+    filter: Partial<TelemetryFilter>,
+    onEvent: TelemetryEventHandler,
+    onError?: (error: Error) => void,
+  ): () => void {
+    const telemetryFilter: TelemetryFilter = {
+      npcIds: filter.npcIds ?? [],
+      minSeverity: filter.minSeverity ?? 0,
+      includeStateChanges: filter.includeStateChanges ?? true,
+      includeMentalBreakdowns: filter.includeMentalBreakdowns ?? true,
+      includePermanentTraumas: filter.includePermanentTraumas ?? true,
+    };
+
+    const stream = this.telemetryClient.streamTelemetry(telemetryFilter);
+    this.telemetryStream = stream;
+
+    stream.on('data', (event: TelemetryEvent) => {
+      onEvent(event);
+    });
+
+    stream.on('error', (error: Error) => {
+      if (onError) {
+        onError(error);
+      }
+    });
+
+    stream.on('end', () => {
+      this.telemetryStream = null;
+    });
+
+    return () => {
+      stream.cancel();
+      this.telemetryStream = null;
+    };
+  }
+
+  /**
+   * Get recent telemetry events (unary call — for initial dashboard load).
+   */
+  async getRecentTelemetry(limit: number = 50, npcId?: string): Promise<TelemetryBatch> {
+    const request: RecentTelemetryRequest = {
+      limit,
+      npcId: npcId ?? '',
+      minSeverity: 0,
+    };
+
+    return this.unaryCall<RecentTelemetryRequest, TelemetryBatch>(
+      this.telemetryClient,
+      'getRecentTelemetry',
+      request,
+    );
+  }
+
+  /**
    * Close the gRPC channel connections.
    */
   close(): void {
+    if (this.telemetryStream) {
+      this.telemetryStream.cancel();
+      this.telemetryStream = null;
+    }
     this.rebellionClient.close();
     this.simulationClient.close();
+    this.telemetryClient.close();
   }
 
   // ---------------------------------------------------------------------------

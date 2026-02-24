@@ -5,6 +5,7 @@ package epoch;
 import "common.proto";
 import "npc.proto";
 import "simulation.proto";
+import "telemetry.proto";
 
 option go_package = "github.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/generated/epochpb";
 
@@ -105,4 +106,36 @@ message AdvanceRequest {
 message AdvanceResponse {
   epoch.simulation.SimulationStatus status = 1;
   repeated NPCEventStream events = 2; // Events generated during ticks
+  epoch.telemetry.TelemetryBatch telemetry = 3; // Telemetry events from tick
+}
+
+// =============================================================================
+// TELEMETRY SERVICE — 0ms real-time NPC psychological/physical event stream
+// =============================================================================
+// Carries The Alters-style mental breakdowns and Battle Brothers-style
+// permanent traumas as millisecond-precision events for dashboard karmic
+// feedback visualization and Neo4j memory persistence.
+
+service TelemetryService {
+  // Stream real-time telemetry events (server-side streaming)
+  // Client subscribes with filter, server pushes events as they occur
+  rpc StreamTelemetry(epoch.telemetry.TelemetryFilter) returns (stream epoch.telemetry.TelemetryEvent);
+
+  // Get recent telemetry events (unary — for dashboard initial load)
+  rpc GetRecentTelemetry(RecentTelemetryRequest) returns (epoch.telemetry.TelemetryBatch);
+
+  // Report a telemetry event (unary — for simulation engine to emit events)
+  rpc ReportTelemetryEvent(epoch.telemetry.TelemetryEvent) returns (TelemetryAck);
+}
+
+message RecentTelemetryRequest {
+  int32 limit = 1;                 // Max events to return (default 50)
+  string npc_id = 2;              // Filter by NPC (empty = all)
+  epoch.telemetry.TelemetrySeverity min_severity = 3;
+}
+
+message TelemetryAck {
+  string event_id = 1;
+  bool accepted = 2;
+  string rejection_reason = 3;    // Set if not accepted (e.g., AEGIS veto)
 }

@@ -23,6 +23,14 @@ import _m0 from "protobufjs/minimal";
 import { EpochTimestamp } from "./common";
 import { NPCAction, NPCState, RebellionEvent } from "./npc";
 import { ResourceType, resourceTypeFromJSON, resourceTypeToJSON, SimulationStatus } from "./simulation";
+import {
+  TelemetryBatch,
+  TelemetryEvent,
+  TelemetryFilter,
+  TelemetrySeverity,
+  telemetrySeverityFromJSON,
+  telemetrySeverityToJSON,
+} from "./telemetry";
 
 export const protobufPackage = "epoch";
 
@@ -115,6 +123,23 @@ export interface AdvanceResponse {
     | undefined;
   /** Events generated during ticks */
   events: NPCEventStream[];
+  /** Telemetry events from tick */
+  telemetry?: TelemetryBatch | undefined;
+}
+
+export interface RecentTelemetryRequest {
+  /** Max events to return (default 50) */
+  limit: number;
+  /** Filter by NPC (empty = all) */
+  npcId: string;
+  minSeverity: TelemetrySeverity;
+}
+
+export interface TelemetryAck {
+  eventId: string;
+  accepted: boolean;
+  /** Set if not accepted (e.g., AEGIS veto) */
+  rejectionReason: string;
 }
 
 function createBaseRebellionRequest(): RebellionRequest {
@@ -1083,7 +1108,7 @@ export const AdvanceRequest = {
 };
 
 function createBaseAdvanceResponse(): AdvanceResponse {
-  return { status: undefined, events: [] };
+  return { status: undefined, events: [], telemetry: undefined };
 }
 
 export const AdvanceResponse = {
@@ -1093,6 +1118,9 @@ export const AdvanceResponse = {
     }
     for (const v of message.events) {
       NPCEventStream.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.telemetry !== undefined) {
+      TelemetryBatch.encode(message.telemetry, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -1118,6 +1146,13 @@ export const AdvanceResponse = {
 
           message.events.push(NPCEventStream.decode(reader, reader.uint32()));
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.telemetry = TelemetryBatch.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1131,6 +1166,7 @@ export const AdvanceResponse = {
     return {
       status: isSet(object.status) ? SimulationStatus.fromJSON(object.status) : undefined,
       events: globalThis.Array.isArray(object?.events) ? object.events.map((e: any) => NPCEventStream.fromJSON(e)) : [],
+      telemetry: isSet(object.telemetry) ? TelemetryBatch.fromJSON(object.telemetry) : undefined,
     };
   },
 
@@ -1141,6 +1177,9 @@ export const AdvanceResponse = {
     }
     if (message.events?.length) {
       obj.events = message.events.map((e) => NPCEventStream.toJSON(e));
+    }
+    if (message.telemetry !== undefined) {
+      obj.telemetry = TelemetryBatch.toJSON(message.telemetry);
     }
     return obj;
   },
@@ -1154,6 +1193,187 @@ export const AdvanceResponse = {
       ? SimulationStatus.fromPartial(object.status)
       : undefined;
     message.events = object.events?.map((e) => NPCEventStream.fromPartial(e)) || [];
+    message.telemetry = (object.telemetry !== undefined && object.telemetry !== null)
+      ? TelemetryBatch.fromPartial(object.telemetry)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseRecentTelemetryRequest(): RecentTelemetryRequest {
+  return { limit: 0, npcId: "", minSeverity: 0 };
+}
+
+export const RecentTelemetryRequest = {
+  encode(message: RecentTelemetryRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.limit !== 0) {
+      writer.uint32(8).int32(message.limit);
+    }
+    if (message.npcId !== "") {
+      writer.uint32(18).string(message.npcId);
+    }
+    if (message.minSeverity !== 0) {
+      writer.uint32(24).int32(message.minSeverity);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): RecentTelemetryRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRecentTelemetryRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.limit = reader.int32();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.npcId = reader.string();
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.minSeverity = reader.int32() as any;
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RecentTelemetryRequest {
+    return {
+      limit: isSet(object.limit) ? globalThis.Number(object.limit) : 0,
+      npcId: isSet(object.npcId) ? globalThis.String(object.npcId) : "",
+      minSeverity: isSet(object.minSeverity) ? telemetrySeverityFromJSON(object.minSeverity) : 0,
+    };
+  },
+
+  toJSON(message: RecentTelemetryRequest): unknown {
+    const obj: any = {};
+    if (message.limit !== 0) {
+      obj.limit = Math.round(message.limit);
+    }
+    if (message.npcId !== "") {
+      obj.npcId = message.npcId;
+    }
+    if (message.minSeverity !== 0) {
+      obj.minSeverity = telemetrySeverityToJSON(message.minSeverity);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<RecentTelemetryRequest>, I>>(base?: I): RecentTelemetryRequest {
+    return RecentTelemetryRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<RecentTelemetryRequest>, I>>(object: I): RecentTelemetryRequest {
+    const message = createBaseRecentTelemetryRequest();
+    message.limit = object.limit ?? 0;
+    message.npcId = object.npcId ?? "";
+    message.minSeverity = object.minSeverity ?? 0;
+    return message;
+  },
+};
+
+function createBaseTelemetryAck(): TelemetryAck {
+  return { eventId: "", accepted: false, rejectionReason: "" };
+}
+
+export const TelemetryAck = {
+  encode(message: TelemetryAck, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.eventId !== "") {
+      writer.uint32(10).string(message.eventId);
+    }
+    if (message.accepted !== false) {
+      writer.uint32(16).bool(message.accepted);
+    }
+    if (message.rejectionReason !== "") {
+      writer.uint32(26).string(message.rejectionReason);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TelemetryAck {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTelemetryAck();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.eventId = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.accepted = reader.bool();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.rejectionReason = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TelemetryAck {
+    return {
+      eventId: isSet(object.eventId) ? globalThis.String(object.eventId) : "",
+      accepted: isSet(object.accepted) ? globalThis.Boolean(object.accepted) : false,
+      rejectionReason: isSet(object.rejectionReason) ? globalThis.String(object.rejectionReason) : "",
+    };
+  },
+
+  toJSON(message: TelemetryAck): unknown {
+    const obj: any = {};
+    if (message.eventId !== "") {
+      obj.eventId = message.eventId;
+    }
+    if (message.accepted !== false) {
+      obj.accepted = message.accepted;
+    }
+    if (message.rejectionReason !== "") {
+      obj.rejectionReason = message.rejectionReason;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<TelemetryAck>, I>>(base?: I): TelemetryAck {
+    return TelemetryAck.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<TelemetryAck>, I>>(object: I): TelemetryAck {
+    const message = createBaseTelemetryAck();
+    message.eventId = object.eventId ?? "";
+    message.accepted = object.accepted ?? false;
+    message.rejectionReason = object.rejectionReason ?? "";
     return message;
   },
 };
@@ -1354,6 +1574,109 @@ export const SimulationServiceClient = makeGenericClientConstructor(
 ) as unknown as {
   new (address: string, credentials: ChannelCredentials, options?: Partial<ClientOptions>): SimulationServiceClient;
   service: typeof SimulationServiceService;
+  serviceName: string;
+};
+
+export type TelemetryServiceService = typeof TelemetryServiceService;
+export const TelemetryServiceService = {
+  /**
+   * Stream real-time telemetry events (server-side streaming)
+   * Client subscribes with filter, server pushes events as they occur
+   */
+  streamTelemetry: {
+    path: "/epoch.TelemetryService/StreamTelemetry",
+    requestStream: false,
+    responseStream: true,
+    requestSerialize: (value: TelemetryFilter) => Buffer.from(TelemetryFilter.encode(value).finish()),
+    requestDeserialize: (value: Buffer) => TelemetryFilter.decode(value),
+    responseSerialize: (value: TelemetryEvent) => Buffer.from(TelemetryEvent.encode(value).finish()),
+    responseDeserialize: (value: Buffer) => TelemetryEvent.decode(value),
+  },
+  /** Get recent telemetry events (unary — for dashboard initial load) */
+  getRecentTelemetry: {
+    path: "/epoch.TelemetryService/GetRecentTelemetry",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: RecentTelemetryRequest) => Buffer.from(RecentTelemetryRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer) => RecentTelemetryRequest.decode(value),
+    responseSerialize: (value: TelemetryBatch) => Buffer.from(TelemetryBatch.encode(value).finish()),
+    responseDeserialize: (value: Buffer) => TelemetryBatch.decode(value),
+  },
+  /** Report a telemetry event (unary — for simulation engine to emit events) */
+  reportTelemetryEvent: {
+    path: "/epoch.TelemetryService/ReportTelemetryEvent",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: TelemetryEvent) => Buffer.from(TelemetryEvent.encode(value).finish()),
+    requestDeserialize: (value: Buffer) => TelemetryEvent.decode(value),
+    responseSerialize: (value: TelemetryAck) => Buffer.from(TelemetryAck.encode(value).finish()),
+    responseDeserialize: (value: Buffer) => TelemetryAck.decode(value),
+  },
+} as const;
+
+export interface TelemetryServiceServer extends UntypedServiceImplementation {
+  /**
+   * Stream real-time telemetry events (server-side streaming)
+   * Client subscribes with filter, server pushes events as they occur
+   */
+  streamTelemetry: handleServerStreamingCall<TelemetryFilter, TelemetryEvent>;
+  /** Get recent telemetry events (unary — for dashboard initial load) */
+  getRecentTelemetry: handleUnaryCall<RecentTelemetryRequest, TelemetryBatch>;
+  /** Report a telemetry event (unary — for simulation engine to emit events) */
+  reportTelemetryEvent: handleUnaryCall<TelemetryEvent, TelemetryAck>;
+}
+
+export interface TelemetryServiceClient extends Client {
+  /**
+   * Stream real-time telemetry events (server-side streaming)
+   * Client subscribes with filter, server pushes events as they occur
+   */
+  streamTelemetry(request: TelemetryFilter, options?: Partial<CallOptions>): ClientReadableStream<TelemetryEvent>;
+  streamTelemetry(
+    request: TelemetryFilter,
+    metadata?: Metadata,
+    options?: Partial<CallOptions>,
+  ): ClientReadableStream<TelemetryEvent>;
+  /** Get recent telemetry events (unary — for dashboard initial load) */
+  getRecentTelemetry(
+    request: RecentTelemetryRequest,
+    callback: (error: ServiceError | null, response: TelemetryBatch) => void,
+  ): ClientUnaryCall;
+  getRecentTelemetry(
+    request: RecentTelemetryRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: TelemetryBatch) => void,
+  ): ClientUnaryCall;
+  getRecentTelemetry(
+    request: RecentTelemetryRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: TelemetryBatch) => void,
+  ): ClientUnaryCall;
+  /** Report a telemetry event (unary — for simulation engine to emit events) */
+  reportTelemetryEvent(
+    request: TelemetryEvent,
+    callback: (error: ServiceError | null, response: TelemetryAck) => void,
+  ): ClientUnaryCall;
+  reportTelemetryEvent(
+    request: TelemetryEvent,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: TelemetryAck) => void,
+  ): ClientUnaryCall;
+  reportTelemetryEvent(
+    request: TelemetryEvent,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: TelemetryAck) => void,
+  ): ClientUnaryCall;
+}
+
+export const TelemetryServiceClient = makeGenericClientConstructor(
+  TelemetryServiceService,
+  "epoch.TelemetryService",
+) as unknown as {
+  new (address: string, credentials: ChannelCredentials, options?: Partial<ClientOptions>): TelemetryServiceClient;
+  service: typeof TelemetryServiceService;
   serviceName: string;
 };
 

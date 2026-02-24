@@ -272,16 +272,23 @@ if (isDirectRun) {
       }
     }
 
-    const { app, wsServer, grpcClient } = createApp({ memoryIntegration });
+    const { app, wsServer, grpcClient, coordinator } = createApp({ memoryIntegration });
 
     const server = app.listen(PORT, () => {
       console.log(`[MAX] Neural Mesh Orchestration online — port ${PORT}`);
       console.log(`[MAX] WebSocket server on port ${wsServer.getPort()}`);
       console.log(`[MAX] Epoch Engine v${EPOCH_VERSION} — All systems nominal`);
+
+      // Start telemetry stream if gRPC is available (non-blocking)
+      if (grpcClient) {
+        coordinator.startTelemetryStream();
+      }
     });
 
     async function gracefulShutdown(signal: string): Promise<void> {
       console.log(`[MAX] ${signal} received — initiating graceful shutdown...`);
+
+      coordinator.stopTelemetryStream();
 
       if (grpcClient) {
         try { grpcClient.close(); } catch (err) { console.error('[MAX] gRPC close error:', err); }

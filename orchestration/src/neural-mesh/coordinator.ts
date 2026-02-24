@@ -29,11 +29,14 @@ import type { GameEvent } from '../services/event-classifier';
 import { TierRouter } from '../services/tier-router';
 import { ResilientLLMClient } from '../services/resilient-client';
 import type { ILogisticsClient } from '../services/logistics-client';
+import { LogisticsGrpcClient } from '../services/logistics-grpc-client';
+import type { TelemetryEventHandler } from '../services/logistics-grpc-client';
 import { AuditLogger } from '../services/audit-logger';
 import { EpochWebSocketServer } from '../services/websocket-server';
 import { MemoryIntegration } from '../services/memory-integration';
 import { CognitiveRails } from './cognitive-rails';
 import type { MeshEvent, MeshResponse, VetoDecision } from './types';
+import type { TelemetryEvent } from '../generated/telemetry';
 
 // =============================================================================
 // NeuralMeshCoordinator Class
@@ -48,6 +51,7 @@ export class NeuralMeshCoordinator {
   private readonly auditLogger: AuditLogger;
   private readonly wsServer: EpochWebSocketServer;
   private readonly memoryIntegration: MemoryIntegration | null;
+  private telemetryCancelFn: (() => void) | null = null;
 
   constructor(
     classifier: EventClassifier,
@@ -164,9 +168,172 @@ export class NeuralMeshCoordinator {
     return results;
   }
 
+  /**
+   * Subscribe to 0ms telemetry stream from the Go logistics backend.
+   * Telemetry events are:
+   *   - Broadcast to WebSocket channels for dashboard (karmic feedback)
+   *   - Persisted to Neo4j memory graph (fire-and-forget)
+   *
+   * Only works when the logistics client is a gRPC client (not HTTP fallback).
+   */
+  startTelemetryStream(): void {
+    if (!(this.logisticsClient instanceof LogisticsGrpcClient)) {
+      console.warn('[NeuralMeshCoordinator] Telemetry stream requires gRPC client — skipping');
+      return;
+    }
+
+    if (this.telemetryCancelFn) {
+      console.warn('[NeuralMeshCoordinator] Telemetry stream already active');
+      return;
+    }
+
+    const grpcClient = this.logisticsClient as LogisticsGrpcClient;
+
+    this.telemetryCancelFn = grpcClient.subscribeTelemetry(
+      {
+        includeMentalBreakdowns: true,
+        includePermanentTraumas: true,
+        includeStateChanges: true,
+      },
+      (event: TelemetryEvent) => this.handleTelemetryEvent(event),
+      (error: Error) => {
+        console.warn('[NeuralMeshCoordinator] Telemetry stream error:', error.message);
+        this.telemetryCancelFn = null;
+        // Auto-reconnect after 5 seconds
+        setTimeout(() => this.startTelemetryStream(), 5000);
+      },
+    );
+
+    console.log('[NeuralMeshCoordinator] Telemetry stream connected — 0ms event delivery active');
+  }
+
+  /**
+   * Stop the telemetry stream subscription.
+   */
+  stopTelemetryStream(): void {
+    if (this.telemetryCancelFn) {
+      this.telemetryCancelFn();
+      this.telemetryCancelFn = null;
+      console.log('[NeuralMeshCoordinator] Telemetry stream disconnected');
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Internal helpers
   // ---------------------------------------------------------------------------
+
+  /**
+   * Handle a telemetry event from the gRPC stream.
+   * Routes to appropriate WebSocket channel and persists to memory.
+   */
+  private handleTelemetryEvent(event: TelemetryEvent): void {
+    const severity = event.severity ?? 0;
+    const npcId = event.npcId ?? 'unknown';
+
+    // Determine WebSocket channel and payload based on event type
+    if (event.mentalBreakdown) {
+      // The Alters-style mental breakdown → rebellion-alerts channel
+      const breakdown = event.mentalBreakdown;
+      this.wsServer.broadcast('rebellion-alerts', {
+        type: 'mental_breakdown',
+        eventId: event.eventId,
+        npcId,
+        severity,
+        breakdownType: breakdown.type,
+        intensity: breakdown.intensity,
+        stressBefore: breakdown.stressBefore,
+        stressAfter: breakdown.stressAfter,
+        triggerContext: breakdown.triggerContext,
+        recoveryProbability: breakdown.recoveryProbability,
+        timestamp: event.timestamp?.iso8601,
+      });
+
+      // Also broadcast to system-status for dashboard overlay
+      if (severity >= 3) { // CRITICAL or CATASTROPHIC
+        this.wsServer.broadcast('system-status', {
+          alert: 'mental_breakdown',
+          npcId,
+          severity,
+          message: `NPC ${npcId}: ${this.breakdownTypeLabel(breakdown.type)} (intensity=${breakdown.intensity?.toFixed(2)})`,
+          timestamp: event.timestamp?.iso8601,
+        });
+      }
+    } else if (event.permanentTrauma) {
+      // Battle Brothers-style permanent trauma → rebellion-alerts channel
+      const trauma = event.permanentTrauma;
+      this.wsServer.broadcast('rebellion-alerts', {
+        type: 'permanent_trauma',
+        eventId: event.eventId,
+        npcId,
+        severity,
+        traumaType: trauma.type,
+        traumaSeverity: trauma.severity,
+        affectedAttribute: trauma.affectedAttribute,
+        attributeReduction: trauma.attributeReduction,
+        triggerContext: trauma.triggerContext,
+        timestamp: event.timestamp?.iso8601,
+      });
+
+      // Permanent traumas always broadcast to system-status
+      this.wsServer.broadcast('system-status', {
+        alert: 'permanent_trauma',
+        npcId,
+        severity,
+        message: `PERMANENT: NPC ${npcId} — ${this.traumaTypeLabel(trauma.type)} (${trauma.affectedAttribute} -${trauma.attributeReduction?.toFixed(2)})`,
+        timestamp: event.timestamp?.iso8601,
+      });
+    } else if (event.stateChange) {
+      // General state change → npc-events channel
+      const change = event.stateChange;
+      this.wsServer.broadcast('npc-events', {
+        type: 'state_change',
+        eventId: event.eventId,
+        npcId,
+        attribute: change.attribute,
+        oldValue: change.oldValue,
+        newValue: change.newValue,
+        cause: change.cause,
+        timestamp: event.timestamp?.iso8601,
+      });
+    }
+
+    // Fire-and-forget: persist telemetry event to Neo4j memory
+    if (this.memoryIntegration) {
+      const isPositive = severity <= 1; // INFO = positive outcome
+      this.memoryIntegration.recordActionOutcome(
+        npcId,
+        `telemetry:${event.mentalBreakdown ? 'mental_breakdown' : event.permanentTrauma ? 'permanent_trauma' : 'state_change'}`,
+        isPositive,
+        0, // Rebellion probability handled separately
+      ).catch((err) => {
+        console.warn('[NeuralMeshCoordinator] Telemetry memory persist failed (non-blocking):', err);
+      });
+    }
+  }
+
+  private breakdownTypeLabel(type: number | undefined): string {
+    const labels: Record<number, string> = {
+      1: 'Stress Spike',
+      2: 'Psychological Fracture',
+      3: 'Identity Crisis',
+      4: 'Paranoia Onset',
+      5: 'Dissociation',
+      6: 'Rage Episode',
+    };
+    return labels[type ?? 0] ?? 'Unknown Breakdown';
+  }
+
+  private traumaTypeLabel(type: number | undefined): string {
+    const labels: Record<number, string> = {
+      1: 'Limb Loss',
+      2: 'Morale Collapse',
+      3: 'PTSD',
+      4: "Survivor's Guilt",
+      5: 'Phobia',
+      6: 'Brain Damage',
+    };
+    return labels[type ?? 0] ?? 'Unknown Trauma';
+  }
 
   /**
    * Build the LLM prompt from event context.

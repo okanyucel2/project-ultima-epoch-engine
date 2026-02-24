@@ -13,6 +13,8 @@ const mockProcessNpcAction = jest.fn();
 const mockGetSimulationStatus = jest.fn();
 const mockAdvanceSimulation = jest.fn();
 const mockClose = jest.fn();
+const mockStreamTelemetry = jest.fn();
+const mockGetRecentTelemetry = jest.fn();
 
 jest.mock('@grpc/grpc-js', () => {
   const actual = jest.requireActual('@grpc/grpc-js');
@@ -30,6 +32,12 @@ jest.mock('@grpc/grpc-js', () => {
     close: mockClose,
   }));
 
+  const MockTelemetryServiceClient = jest.fn().mockImplementation(() => ({
+    streamTelemetry: mockStreamTelemetry,
+    getRecentTelemetry: mockGetRecentTelemetry,
+    close: mockClose,
+  }));
+
   return {
     ...actual,
     credentials: {
@@ -43,6 +51,9 @@ jest.mock('@grpc/grpc-js', () => {
       }
       if (serviceName === 'epoch.SimulationService') {
         return MockSimulationServiceClient;
+      }
+      if (serviceName === 'epoch.TelemetryService') {
+        return MockTelemetryServiceClient;
       }
       return jest.fn();
     }),

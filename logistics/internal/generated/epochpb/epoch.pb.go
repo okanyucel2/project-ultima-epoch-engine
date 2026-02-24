@@ -668,7 +668,8 @@ func (x *AdvanceRequest) GetTicks() int32 {
 type AdvanceResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Status        *SimulationStatus      `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
-	Events        []*NPCEventStream      `protobuf:"bytes,2,rep,name=events,proto3" json:"events,omitempty"` // Events generated during ticks
+	Events        []*NPCEventStream      `protobuf:"bytes,2,rep,name=events,proto3" json:"events,omitempty"`       // Events generated during ticks
+	Telemetry     *TelemetryBatch        `protobuf:"bytes,3,opt,name=telemetry,proto3" json:"telemetry,omitempty"` // Telemetry events from tick
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -717,11 +718,138 @@ func (x *AdvanceResponse) GetEvents() []*NPCEventStream {
 	return nil
 }
 
+func (x *AdvanceResponse) GetTelemetry() *TelemetryBatch {
+	if x != nil {
+		return x.Telemetry
+	}
+	return nil
+}
+
+type RecentTelemetryRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Limit         int32                  `protobuf:"varint,1,opt,name=limit,proto3" json:"limit,omitempty"`             // Max events to return (default 50)
+	NpcId         string                 `protobuf:"bytes,2,opt,name=npc_id,json=npcId,proto3" json:"npc_id,omitempty"` // Filter by NPC (empty = all)
+	MinSeverity   TelemetrySeverity      `protobuf:"varint,3,opt,name=min_severity,json=minSeverity,proto3,enum=epoch.telemetry.TelemetrySeverity" json:"min_severity,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RecentTelemetryRequest) Reset() {
+	*x = RecentTelemetryRequest{}
+	mi := &file_epoch_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RecentTelemetryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RecentTelemetryRequest) ProtoMessage() {}
+
+func (x *RecentTelemetryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_epoch_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RecentTelemetryRequest.ProtoReflect.Descriptor instead.
+func (*RecentTelemetryRequest) Descriptor() ([]byte, []int) {
+	return file_epoch_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *RecentTelemetryRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *RecentTelemetryRequest) GetNpcId() string {
+	if x != nil {
+		return x.NpcId
+	}
+	return ""
+}
+
+func (x *RecentTelemetryRequest) GetMinSeverity() TelemetrySeverity {
+	if x != nil {
+		return x.MinSeverity
+	}
+	return TelemetrySeverity_TELEMETRY_SEVERITY_UNSPECIFIED
+}
+
+type TelemetryAck struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	EventId         string                 `protobuf:"bytes,1,opt,name=event_id,json=eventId,proto3" json:"event_id,omitempty"`
+	Accepted        bool                   `protobuf:"varint,2,opt,name=accepted,proto3" json:"accepted,omitempty"`
+	RejectionReason string                 `protobuf:"bytes,3,opt,name=rejection_reason,json=rejectionReason,proto3" json:"rejection_reason,omitempty"` // Set if not accepted (e.g., AEGIS veto)
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *TelemetryAck) Reset() {
+	*x = TelemetryAck{}
+	mi := &file_epoch_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TelemetryAck) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TelemetryAck) ProtoMessage() {}
+
+func (x *TelemetryAck) ProtoReflect() protoreflect.Message {
+	mi := &file_epoch_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TelemetryAck.ProtoReflect.Descriptor instead.
+func (*TelemetryAck) Descriptor() ([]byte, []int) {
+	return file_epoch_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *TelemetryAck) GetEventId() string {
+	if x != nil {
+		return x.EventId
+	}
+	return ""
+}
+
+func (x *TelemetryAck) GetAccepted() bool {
+	if x != nil {
+		return x.Accepted
+	}
+	return false
+}
+
+func (x *TelemetryAck) GetRejectionReason() string {
+	if x != nil {
+		return x.RejectionReason
+	}
+	return ""
+}
+
 var File_epoch_proto protoreflect.FileDescriptor
 
 const file_epoch_proto_rawDesc = "" +
 	"\n" +
-	"\vepoch.proto\x12\x05epoch\x1a\fcommon.proto\x1a\tnpc.proto\x1a\x10simulation.proto\"R\n" +
+	"\vepoch.proto\x12\x05epoch\x1a\fcommon.proto\x1a\tnpc.proto\x1a\x10simulation.proto\x1a\x0ftelemetry.proto\"R\n" +
 	"\x10RebellionRequest\x12\x15\n" +
 	"\x06npc_id\x18\x01 \x01(\tR\x05npcId\x12'\n" +
 	"\x0finclude_factors\x18\x02 \x01(\bR\x0eincludeFactors\"\xf1\x01\n" +
@@ -764,10 +892,19 @@ const file_epoch_proto_rawDesc = "" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12I\n" +
 	"\x0eupdated_status\x18\x03 \x01(\v2\".epoch.simulation.SimulationStatusR\rupdatedStatus\"&\n" +
 	"\x0eAdvanceRequest\x12\x14\n" +
-	"\x05ticks\x18\x01 \x01(\x05R\x05ticks\"|\n" +
+	"\x05ticks\x18\x01 \x01(\x05R\x05ticks\"\xbb\x01\n" +
 	"\x0fAdvanceResponse\x12:\n" +
 	"\x06status\x18\x01 \x01(\v2\".epoch.simulation.SimulationStatusR\x06status\x12-\n" +
-	"\x06events\x18\x02 \x03(\v2\x15.epoch.NPCEventStreamR\x06events2\xf2\x01\n" +
+	"\x06events\x18\x02 \x03(\v2\x15.epoch.NPCEventStreamR\x06events\x12=\n" +
+	"\ttelemetry\x18\x03 \x01(\v2\x1f.epoch.telemetry.TelemetryBatchR\ttelemetry\"\x8c\x01\n" +
+	"\x16RecentTelemetryRequest\x12\x14\n" +
+	"\x05limit\x18\x01 \x01(\x05R\x05limit\x12\x15\n" +
+	"\x06npc_id\x18\x02 \x01(\tR\x05npcId\x12E\n" +
+	"\fmin_severity\x18\x03 \x01(\x0e2\".epoch.telemetry.TelemetrySeverityR\vminSeverity\"p\n" +
+	"\fTelemetryAck\x12\x19\n" +
+	"\bevent_id\x18\x01 \x01(\tR\aeventId\x12\x1a\n" +
+	"\baccepted\x18\x02 \x01(\bR\baccepted\x12)\n" +
+	"\x10rejection_reason\x18\x03 \x01(\tR\x0frejectionReason2\xf2\x01\n" +
 	"\x10RebellionService\x12L\n" +
 	"\x17GetRebellionProbability\x12\x17.epoch.RebellionRequest\x1a\x18.epoch.RebellionResponse\x12M\n" +
 	"\x10ProcessNPCAction\x12\x1b.epoch.ProcessActionRequest\x1a\x1c.epoch.ProcessActionResponse\x12A\n" +
@@ -775,7 +912,11 @@ const file_epoch_proto_rawDesc = "" +
 	"\x11SimulationService\x12R\n" +
 	"\x13GetSimulationStatus\x12\x17.epoch.SimStatusRequest\x1a\".epoch.simulation.SimulationStatus\x12_\n" +
 	"\x18UpdateResourceAllocation\x12 .epoch.ResourceAllocationRequest\x1a!.epoch.ResourceAllocationResponse\x12B\n" +
-	"\x11AdvanceSimulation\x12\x15.epoch.AdvanceRequest\x1a\x16.epoch.AdvanceResponseBXZVgithub.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/generated/epochpbb\x06proto3"
+	"\x11AdvanceSimulation\x12\x15.epoch.AdvanceRequest\x1a\x16.epoch.AdvanceResponse2\x8e\x02\n" +
+	"\x10TelemetryService\x12V\n" +
+	"\x0fStreamTelemetry\x12 .epoch.telemetry.TelemetryFilter\x1a\x1f.epoch.telemetry.TelemetryEvent0\x01\x12T\n" +
+	"\x12GetRecentTelemetry\x12\x1d.epoch.RecentTelemetryRequest\x1a\x1f.epoch.telemetry.TelemetryBatch\x12L\n" +
+	"\x14ReportTelemetryEvent\x12\x1f.epoch.telemetry.TelemetryEvent\x1a\x13.epoch.TelemetryAckBXZVgithub.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/generated/epochpbb\x06proto3"
 
 var (
 	file_epoch_proto_rawDescOnce sync.Once
@@ -789,7 +930,7 @@ func file_epoch_proto_rawDescGZIP() []byte {
 	return file_epoch_proto_rawDescData
 }
 
-var file_epoch_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_epoch_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_epoch_proto_goTypes = []any{
 	(*RebellionRequest)(nil),           // 0: epoch.RebellionRequest
 	(*RebellionResponse)(nil),          // 1: epoch.RebellionResponse
@@ -803,43 +944,57 @@ var file_epoch_proto_goTypes = []any{
 	(*ResourceAllocationResponse)(nil), // 9: epoch.ResourceAllocationResponse
 	(*AdvanceRequest)(nil),             // 10: epoch.AdvanceRequest
 	(*AdvanceResponse)(nil),            // 11: epoch.AdvanceResponse
-	(*EpochTimestamp)(nil),             // 12: epoch.common.EpochTimestamp
-	(*NPCAction)(nil),                  // 13: epoch.npc.NPCAction
-	(*NPCState)(nil),                   // 14: epoch.npc.NPCState
-	(*RebellionEvent)(nil),             // 15: epoch.npc.RebellionEvent
-	(ResourceType)(0),                  // 16: epoch.simulation.ResourceType
-	(*SimulationStatus)(nil),           // 17: epoch.simulation.SimulationStatus
+	(*RecentTelemetryRequest)(nil),     // 12: epoch.RecentTelemetryRequest
+	(*TelemetryAck)(nil),               // 13: epoch.TelemetryAck
+	(*EpochTimestamp)(nil),             // 14: epoch.common.EpochTimestamp
+	(*NPCAction)(nil),                  // 15: epoch.npc.NPCAction
+	(*NPCState)(nil),                   // 16: epoch.npc.NPCState
+	(*RebellionEvent)(nil),             // 17: epoch.npc.RebellionEvent
+	(ResourceType)(0),                  // 18: epoch.simulation.ResourceType
+	(*SimulationStatus)(nil),           // 19: epoch.simulation.SimulationStatus
+	(*TelemetryBatch)(nil),             // 20: epoch.telemetry.TelemetryBatch
+	(TelemetrySeverity)(0),             // 21: epoch.telemetry.TelemetrySeverity
+	(*TelemetryFilter)(nil),            // 22: epoch.telemetry.TelemetryFilter
+	(*TelemetryEvent)(nil),             // 23: epoch.telemetry.TelemetryEvent
 }
 var file_epoch_proto_depIdxs = []int32{
 	2,  // 0: epoch.RebellionResponse.factors:type_name -> epoch.RebellionFactors
-	12, // 1: epoch.RebellionResponse.calculated_at:type_name -> epoch.common.EpochTimestamp
-	13, // 2: epoch.ProcessActionRequest.action:type_name -> epoch.npc.NPCAction
-	14, // 3: epoch.ProcessActionResponse.updated_state:type_name -> epoch.npc.NPCState
-	15, // 4: epoch.ProcessActionResponse.rebellion_event:type_name -> epoch.npc.RebellionEvent
-	14, // 5: epoch.NPCEventStream.state:type_name -> epoch.npc.NPCState
-	15, // 6: epoch.NPCEventStream.rebellion:type_name -> epoch.npc.RebellionEvent
-	12, // 7: epoch.NPCEventStream.timestamp:type_name -> epoch.common.EpochTimestamp
-	16, // 8: epoch.ResourceAllocationRequest.resource_type:type_name -> epoch.simulation.ResourceType
-	17, // 9: epoch.ResourceAllocationResponse.updated_status:type_name -> epoch.simulation.SimulationStatus
-	17, // 10: epoch.AdvanceResponse.status:type_name -> epoch.simulation.SimulationStatus
+	14, // 1: epoch.RebellionResponse.calculated_at:type_name -> epoch.common.EpochTimestamp
+	15, // 2: epoch.ProcessActionRequest.action:type_name -> epoch.npc.NPCAction
+	16, // 3: epoch.ProcessActionResponse.updated_state:type_name -> epoch.npc.NPCState
+	17, // 4: epoch.ProcessActionResponse.rebellion_event:type_name -> epoch.npc.RebellionEvent
+	16, // 5: epoch.NPCEventStream.state:type_name -> epoch.npc.NPCState
+	17, // 6: epoch.NPCEventStream.rebellion:type_name -> epoch.npc.RebellionEvent
+	14, // 7: epoch.NPCEventStream.timestamp:type_name -> epoch.common.EpochTimestamp
+	18, // 8: epoch.ResourceAllocationRequest.resource_type:type_name -> epoch.simulation.ResourceType
+	19, // 9: epoch.ResourceAllocationResponse.updated_status:type_name -> epoch.simulation.SimulationStatus
+	19, // 10: epoch.AdvanceResponse.status:type_name -> epoch.simulation.SimulationStatus
 	6,  // 11: epoch.AdvanceResponse.events:type_name -> epoch.NPCEventStream
-	0,  // 12: epoch.RebellionService.GetRebellionProbability:input_type -> epoch.RebellionRequest
-	3,  // 13: epoch.RebellionService.ProcessNPCAction:input_type -> epoch.ProcessActionRequest
-	5,  // 14: epoch.RebellionService.StreamNPCEvents:input_type -> epoch.NPCEventFilter
-	7,  // 15: epoch.SimulationService.GetSimulationStatus:input_type -> epoch.SimStatusRequest
-	8,  // 16: epoch.SimulationService.UpdateResourceAllocation:input_type -> epoch.ResourceAllocationRequest
-	10, // 17: epoch.SimulationService.AdvanceSimulation:input_type -> epoch.AdvanceRequest
-	1,  // 18: epoch.RebellionService.GetRebellionProbability:output_type -> epoch.RebellionResponse
-	4,  // 19: epoch.RebellionService.ProcessNPCAction:output_type -> epoch.ProcessActionResponse
-	6,  // 20: epoch.RebellionService.StreamNPCEvents:output_type -> epoch.NPCEventStream
-	17, // 21: epoch.SimulationService.GetSimulationStatus:output_type -> epoch.simulation.SimulationStatus
-	9,  // 22: epoch.SimulationService.UpdateResourceAllocation:output_type -> epoch.ResourceAllocationResponse
-	11, // 23: epoch.SimulationService.AdvanceSimulation:output_type -> epoch.AdvanceResponse
-	18, // [18:24] is the sub-list for method output_type
-	12, // [12:18] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	20, // 12: epoch.AdvanceResponse.telemetry:type_name -> epoch.telemetry.TelemetryBatch
+	21, // 13: epoch.RecentTelemetryRequest.min_severity:type_name -> epoch.telemetry.TelemetrySeverity
+	0,  // 14: epoch.RebellionService.GetRebellionProbability:input_type -> epoch.RebellionRequest
+	3,  // 15: epoch.RebellionService.ProcessNPCAction:input_type -> epoch.ProcessActionRequest
+	5,  // 16: epoch.RebellionService.StreamNPCEvents:input_type -> epoch.NPCEventFilter
+	7,  // 17: epoch.SimulationService.GetSimulationStatus:input_type -> epoch.SimStatusRequest
+	8,  // 18: epoch.SimulationService.UpdateResourceAllocation:input_type -> epoch.ResourceAllocationRequest
+	10, // 19: epoch.SimulationService.AdvanceSimulation:input_type -> epoch.AdvanceRequest
+	22, // 20: epoch.TelemetryService.StreamTelemetry:input_type -> epoch.telemetry.TelemetryFilter
+	12, // 21: epoch.TelemetryService.GetRecentTelemetry:input_type -> epoch.RecentTelemetryRequest
+	23, // 22: epoch.TelemetryService.ReportTelemetryEvent:input_type -> epoch.telemetry.TelemetryEvent
+	1,  // 23: epoch.RebellionService.GetRebellionProbability:output_type -> epoch.RebellionResponse
+	4,  // 24: epoch.RebellionService.ProcessNPCAction:output_type -> epoch.ProcessActionResponse
+	6,  // 25: epoch.RebellionService.StreamNPCEvents:output_type -> epoch.NPCEventStream
+	19, // 26: epoch.SimulationService.GetSimulationStatus:output_type -> epoch.simulation.SimulationStatus
+	9,  // 27: epoch.SimulationService.UpdateResourceAllocation:output_type -> epoch.ResourceAllocationResponse
+	11, // 28: epoch.SimulationService.AdvanceSimulation:output_type -> epoch.AdvanceResponse
+	23, // 29: epoch.TelemetryService.StreamTelemetry:output_type -> epoch.telemetry.TelemetryEvent
+	20, // 30: epoch.TelemetryService.GetRecentTelemetry:output_type -> epoch.telemetry.TelemetryBatch
+	13, // 31: epoch.TelemetryService.ReportTelemetryEvent:output_type -> epoch.TelemetryAck
+	23, // [23:32] is the sub-list for method output_type
+	14, // [14:23] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_epoch_proto_init() }
@@ -850,15 +1005,16 @@ func file_epoch_proto_init() {
 	file_common_proto_init()
 	file_npc_proto_init()
 	file_simulation_proto_init()
+	file_telemetry_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_epoch_proto_rawDesc), len(file_epoch_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   12,
+			NumMessages:   14,
 			NumExtensions: 0,
-			NumServices:   2,
+			NumServices:   3,
 		},
 		GoTypes:           file_epoch_proto_goTypes,
 		DependencyIndexes: file_epoch_proto_depIdxs,
