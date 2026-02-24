@@ -174,6 +174,16 @@ export class RetryQueue {
   }
 
   /**
+   * Flush all remaining operations, then stop the auto-flush timer.
+   * Used during graceful shutdown to prevent data loss. (Wave 25C)
+   */
+  async drainAndStop(session: Session): Promise<number> {
+    this.stopAutoFlush();
+    if (this.count === 0) return 0;
+    return this.flush(session);
+  }
+
+  /**
    * Stop the auto-flush timer.
    */
   stopAutoFlush(): void {

@@ -149,13 +149,26 @@ export class Neo4jConnectionPool {
 
   /**
    * Closes all active sessions and the underlying driver.
+   * Wave 25C: Drains RetryQueue before closing to prevent data loss.
    */
   async close(): Promise<void> {
     if (this.closed) return;
     this.closed = true;
 
-    // Stop retry queue auto-flush (Wave 21B)
-    if (this.retryQueue) {
+    // Wave 25C: Drain retry queue before closing (zero data loss)
+    if (this.retryQueue && this.retryQueue.size > 0) {
+      try {
+        const session = this.driver.session();
+        const flushed = await this.retryQueue.drainAndStop(session);
+        if (flushed > 0) {
+          console.log(`[Neo4jConnectionPool] Drained ${flushed} ops before shutdown`);
+        }
+        await session.close();
+      } catch {
+        console.warn('[Neo4jConnectionPool] Could not drain retry queue — Neo4j unreachable');
+        this.retryQueue.stopAutoFlush();
+      }
+    } else if (this.retryQueue) {
       this.retryQueue.stopAutoFlush();
     }
 

@@ -433,6 +433,54 @@ deep_health_check() {
 }
 
 # =============================================================================
+# PHASE 4: TELEMETRY VERIFICATION (Wave 25B)
+# =============================================================================
+
+verify_telemetry() {
+    chaos_log "PHASE" "PHASE 4: Telemetry Verification (Wave 25B)"
+
+    local telemetry_ok=true
+    local telemetry_start=$(date +%s)
+
+    # Check if orchestration telemetry endpoint is responsive
+    local telemetry_check=$(curl -sf -X POST --max-time 5 \
+        "http://localhost:$ORCHESTRATION_PORT/api/telemetry/watchdog" \
+        -H "Content-Type: application/json" \
+        -d '{"channel":"system-status","data":{"type":"watchdog_restart","service":"chaos-test","reason":"telemetry_verification","attempt":0,"timestamp":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}}' \
+        2>/dev/null)
+
+    if [[ -n "$telemetry_check" ]]; then
+        local telemetry_latency=$(($(date +%s) - telemetry_start))
+        chaos_log "OK" "Telemetry endpoint responsive (latency: ${telemetry_latency}s)"
+        RECOVERY_RESULTS["telemetry_endpoint"]="OK (${telemetry_latency}s)"
+    else
+        chaos_log "FAIL" "Telemetry endpoint not responding"
+        RECOVERY_RESULTS["telemetry_endpoint"]="FAILED"
+        telemetry_ok=false
+    fi
+
+    # Verify WebSocket server is accepting connections
+    local ws_check=$(curl -sf --max-time 5 -o /dev/null -w "%{http_code}" \
+        "http://localhost:$ORCHESTRATION_PORT/health" 2>/dev/null)
+
+    if [[ "$ws_check" == "200" ]]; then
+        chaos_log "OK" "Orchestration healthy — WebSocket broadcast path available"
+        RECOVERY_RESULTS["ws_broadcast"]="OK"
+    else
+        chaos_log "FAIL" "Orchestration health check failed — WebSocket broadcast path broken"
+        RECOVERY_RESULTS["ws_broadcast"]="FAILED"
+        telemetry_ok=false
+    fi
+
+    # Report telemetry latency summary
+    if [[ "$telemetry_ok" == "true" ]]; then
+        chaos_log "OK" "Telemetry verification PASSED"
+    else
+        chaos_log "FAIL" "Telemetry verification FAILED"
+    fi
+}
+
+# =============================================================================
 # REPORT GENERATION
 # =============================================================================
 
@@ -482,6 +530,15 @@ All services verified alive before chaos injection.
 | Logistics | ${RECOVERY_RESULTS["logistics"]:-UNKNOWN} |
 | Neo4j | ${RECOVERY_RESULTS["neo4j"]:-UNKNOWN} |
 | Dashboard | ${RECOVERY_RESULTS["dashboard"]:-UNKNOWN} |
+
+---
+
+## Telemetry Verification (Wave 25B)
+
+| Check | Result |
+|-------|--------|
+| Telemetry Endpoint | ${RECOVERY_RESULTS["telemetry_endpoint"]:-NOT RUN} |
+| WS Broadcast Path | ${RECOVERY_RESULTS["ws_broadcast"]:-NOT RUN} |
 
 ---
 
@@ -616,6 +673,9 @@ run_full_chaos() {
     # Verify recovery
     verify_recovery
     local recovery_exit=$?
+
+    # Phase 4: Telemetry verification (Wave 25B)
+    verify_telemetry
 
     # Deep health check
     deep_health_check

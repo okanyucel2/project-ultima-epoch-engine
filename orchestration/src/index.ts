@@ -288,6 +288,37 @@ app.post('/api/cleansing/deploy', async (req, res) => {
   }
 });
 
+// ---------------------------------------------------------------------------
+// POST /api/telemetry/watchdog — Receive watchdog restart events, rebroadcast via WS
+// (Wave 25B: Live telemetry pipeline — bash watchdog → HTTP → WebSocket → dashboard)
+// ---------------------------------------------------------------------------
+app.post('/api/telemetry/watchdog', (req, res) => {
+  const payload = req.body;
+  if (wsServer && payload?.data) {
+    wsServer.broadcast('system-status', payload.data);
+  }
+  res.json({ received: true });
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/phoenix/drain — Drain RetryQueue before restart (Wave 25C)
+// Used by phoenix_protocol.sh for graceful pre-restart drain
+// ---------------------------------------------------------------------------
+app.post('/api/phoenix/drain', async (_req, res) => {
+  if (!memoryIntegration) {
+    res.json({ drained: 0, message: 'No memory integration active' });
+    return;
+  }
+  try {
+    const stats = await memoryIntegration.drain();
+    res.json({ drained: stats.flushed, message: 'RetryQueue drained', stats });
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Drain failed',
+    });
+  }
+});
+
   return app;
 }
 
@@ -324,6 +355,16 @@ if (isDirectRun) {
       console.log(`[MAX] WebSocket server on port ${wsServer.getPort()}`);
       console.log(`[MAX] Epoch Engine v${EPOCH_VERSION} — All systems nominal`);
 
+      // Wave 25B: Broadcast startup event to connected dashboard clients
+      wsServer.broadcast('system-status', {
+        type: 'startup',
+        service: 'orchestration',
+        version: EPOCH_VERSION,
+        port: PORT,
+        wsPort: wsServer.getPort(),
+        timestamp: new Date().toISOString(),
+      });
+
       // Start telemetry stream if gRPC is available (non-blocking)
       if (grpcClient) {
         coordinator.startTelemetryStream();
@@ -335,8 +376,21 @@ if (isDirectRun) {
 
       coordinator.stopTelemetryStream();
 
+      // Wave 25C: Broadcast shutdown event before closing WS
+      wsServer.broadcast('system-status', {
+        type: 'shutdown',
+        service: 'orchestration',
+        signal,
+        timestamp: new Date().toISOString(),
+      });
+
       if (grpcClient) {
         try { grpcClient.close(); } catch (err) { console.error('[MAX] gRPC close error:', err); }
+      }
+
+      // Wave 25C: Close Neo4j pool (drains RetryQueue first)
+      if (memoryIntegration) {
+        try { await memoryIntegration.close(); } catch (err) { console.error('[MAX] Neo4j close error:', err); }
       }
 
       try { await wsServer.close(); } catch (err) { console.error('[MAX] WS close error:', err); }

@@ -1,11 +1,16 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue';
 import { fetchSystemHealth, type DeepHealthResponse, type ServiceHealth } from '../api/epoch-api';
 import StatusBadge from '../components/StatusBadge.vue';
+import { useWatchdogTelemetry, type WatchdogEvent } from '../composables/useWatchdogTelemetry';
 
 const healthData = ref<DeepHealthResponse | null>(null);
 const loading = ref(false);
 const error = ref<string | null>(null);
+
+// Wave 25B: Watchdog telemetry — live restart/startup/shutdown events
+const { events: watchdogEvents, lastRestart } = useWatchdogTelemetry();
+const restartingServices = reactive(new Set<string>());
 
 interface ServiceDisplay {
   name: string;
@@ -73,6 +78,54 @@ async function loadHealth(): Promise<void> {
   }
 }
 
+// Wave 25B: Map service from watchdog event name to card key
+function serviceKeyFromEvent(service: string): string | null {
+  const lower = service.toLowerCase();
+  if (lower.includes('orchestration') || lower.includes('backend')) return 'orchestration';
+  if (lower.includes('logistics')) return 'logistics';
+  if (lower.includes('websocket')) return 'websocket';
+  if (lower.includes('frontend') || lower.includes('dashboard')) return 'frontend';
+  return null;
+}
+
+// Last 10 events for the Recent Events card
+const recentEvents = computed(() => watchdogEvents.value.slice(0, 10));
+
+// Watch for restart events and trigger pulse-glow animation
+watch(lastRestart, (event) => {
+  if (!event) return;
+  const key = serviceKeyFromEvent(event.service);
+  if (!key) return;
+  restartingServices.add(key);
+  setTimeout(() => restartingServices.delete(key), 5000);
+});
+
+function formatEventTime(ts: string): string {
+  try {
+    return new Date(ts).toLocaleTimeString();
+  } catch {
+    return ts;
+  }
+}
+
+function eventTypeLabel(type: string): string {
+  switch (type) {
+    case 'watchdog_restart': return 'RESTART';
+    case 'startup': return 'STARTUP';
+    case 'shutdown': return 'SHUTDOWN';
+    default: return type.toUpperCase();
+  }
+}
+
+function eventTypeClass(type: string): string {
+  switch (type) {
+    case 'watchdog_restart': return 'event-tag--restart';
+    case 'startup': return 'event-tag--startup';
+    case 'shutdown': return 'event-tag--shutdown';
+    default: return '';
+  }
+}
+
 let refreshInterval: ReturnType<typeof setInterval> | undefined;
 
 onMounted(() => {
@@ -114,7 +167,7 @@ onUnmounted(() => {
       <div
         v-for="service in services"
         :key="service.key"
-        class="glass-card service-card"
+        :class="['glass-card', 'service-card', { 'service-card--restarting': restartingServices.has(service.key) }]"
       >
         <div class="service-card__header">
           <h3 class="service-card__name">{{ service.name }}</h3>
@@ -146,6 +199,25 @@ onUnmounted(() => {
             <span class="detail-label">Error</span>
             <span class="text-danger">{{ service.health.error }}</span>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Wave 25B: Recent Watchdog Events -->
+    <div v-if="recentEvents.length > 0" class="glass-card events-card">
+      <h3 class="events-card__title">Recent Events</h3>
+      <div class="events-list">
+        <div
+          v-for="(event, idx) in recentEvents"
+          :key="idx"
+          class="event-row"
+        >
+          <span :class="['event-tag', eventTypeClass(event.type)]">
+            {{ eventTypeLabel(event.type) }}
+          </span>
+          <span class="event-service">{{ event.service }}</span>
+          <span v-if="event.reason" class="text-muted event-reason">{{ event.reason }}</span>
+          <span class="text-muted event-time">{{ formatEventTime(event.timestamp) }}</span>
         </div>
       </div>
     </div>
@@ -265,5 +337,79 @@ onUnmounted(() => {
   padding: 0.5rem 1rem;
   cursor: pointer;
   font-size: 0.85rem;
+}
+
+/* Wave 25B: Pulse-glow animation for restarting services */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 rgba(245, 158, 11, 0); }
+  50% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.4); }
+}
+
+.service-card--restarting {
+  animation: pulse-glow 1.5s ease-in-out 3;
+  border-color: rgba(245, 158, 11, 0.5);
+}
+
+/* Wave 25B: Recent Events card */
+.events-card__title {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.event-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.event-tag {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.event-tag--restart {
+  background: rgba(245, 158, 11, 0.15);
+  color: rgb(245, 158, 11);
+}
+
+.event-tag--startup {
+  background: rgba(34, 197, 94, 0.15);
+  color: rgb(34, 197, 94);
+}
+
+.event-tag--shutdown {
+  background: rgba(239, 68, 68, 0.15);
+  color: rgb(239, 68, 68);
+}
+
+.event-service {
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.event-reason {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.event-time {
+  flex-shrink: 0;
+  font-size: 0.75rem;
 }
 </style>

@@ -62,7 +62,7 @@ services:
     health_check:
       url: "http://localhost:${PORT}/health"
       method: GET
-      interval: 30         # seconds between watchdog health checks
+      interval: 15         # seconds between watchdog health checks (Wave 25A: 30→15)
       timeout: 5           # seconds per health check request
       max_failures: 3      # consecutive failures before auto-restart
     restart_policy:
@@ -76,7 +76,7 @@ services:
     health_check:
       url: "http://localhost:12065/health"
       method: GET
-      interval: 30
+      interval: 15         # Wave 25A: 30→15
       timeout: 5
       max_failures: 3
     restart_policy:
@@ -89,7 +89,7 @@ services:
     health_check:
       url: "http://localhost:${PORT}/"
       method: GET
-      interval: 30
+      interval: 15         # Wave 25A: 30→15
       timeout: 5
       max_failures: 3
     restart_policy:
