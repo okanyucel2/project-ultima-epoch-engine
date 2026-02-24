@@ -555,5 +555,36 @@ To add a new engine exporter (e.g., Bevy, custom WebGL):
 
 ---
 
-*Last updated: 2026-02-24 — Waves 15-23*
+## Gelecek Mimari Hedefler (Ecosystem Scaling)
+
+Epoch Engine'in tek-kiracı mimarisinden çoklu-kiracı ekosisteme evrimi planlanmıştır.
+Detaylı vizyon belgesi: **[`docs/EPIC_ROADMAP.md`](../EPIC_ROADMAP.md)**
+
+### Epic Overview
+
+| # | Epic | Hedef | Durum |
+|---|------|-------|-------|
+| 1 | **Multi-Tenant Neo4j** | Namespace isolation — her dünya kendi graph partition'ı | BACKLOG |
+| 2 | **Global Neural Dispatcher** | Merkezi API Gateway — tüm dünyalar tek giriş noktası | BACKLOG |
+| 3 | **Cross-Pollination** | Projeler arası olay geçirgenliği — Kelebek Etkisi mekanizması | BACKLOG |
+
+### Etkilenen Katmanlar
+
+```
+Epic 1 (Neo4j) ──→ Layer 2: Data Resilience
+  ConnectionPool tenant-aware, RetryQueue per-world partitioning
+
+Epic 2 (Gateway) ──→ Layer 1 + Layer 2: New routing layer above existing services
+  EpochDispatcher world-prefixed channels, unified health
+
+Epic 3 (Cross-Pollination) ──→ All Layers: Inter-world event bus
+  Attenuation-based event propagation, AEGIS cross-world veto
+```
+
+**Dependency:** Epic 1 → Epic 2 → Epic 3 (sequential)
+
+---
+
+*Last updated: 2026-02-24 — Waves 15-27*
 *Visual diagrams: `docs/architecture/*.jpg`*
+*Epic roadmap: `docs/EPIC_ROADMAP.md`*
