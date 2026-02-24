@@ -51,6 +51,15 @@ via Cognitive Rails.
 
 ---
 
+## Onboarding (SSOT — Mandatory for New Agents)
+
+**HARD RULE:** Before starting any work, read the Architecture Visual Index:
+- **[`docs/architecture/ARCHITECTURE_VISUAL_INDEX.md`](docs/architecture/ARCHITECTURE_VISUAL_INDEX.md)** — Single Source of Truth
+- Covers: Universal Engine Bridge, 3-Layer Resilience, Self-Healing Process Manager
+- Text-based descriptions with direct code-file mappings (agent-readable, no images required)
+
+---
+
 ## Key Concepts
 
 ### Captain Bones Paradigm

@@ -80,6 +80,12 @@ cd logistics && go test ./...
 cd dashboard && npx vue-tsc --noEmit
 ```
 
+## Onboarding (SSOT)
+
+New agents and contributors **must** read the Architecture Visual Index before starting work:
+
+- **[Architecture Visual Index](docs/architecture/ARCHITECTURE_VISUAL_INDEX.md)** — Single Source of Truth for system architecture. Text-based diagram descriptions with direct code-file mappings. Covers: Universal Game Engine Bridge, 3-Layer Resilience, Self-Healing Process Manager.
+
 ## Key Features
 
 - **Sentient NPCs**: Persistent memory graph per NPC in Neo4j (Epoch Memory)
