@@ -19,6 +19,7 @@ import type { ServiceError } from '@grpc/grpc-js';
 import { ResourceType } from '../../shared/types/simulation';
 import type { SimulationStatus } from '../../shared/types/simulation';
 import type { NPCState } from '../../shared/types/npc';
+import type { CleansingResult } from '../../shared/types/cleansing';
 import type {
   ILogisticsClient,
   RebellionProbabilityResponse,
@@ -29,6 +30,7 @@ import {
   RebellionServiceClient,
   SimulationServiceClient,
   TelemetryServiceClient,
+  CleansingServiceClient,
 } from '../generated/epoch';
 import type {
   RebellionRequest,
@@ -39,6 +41,8 @@ import type {
   AdvanceRequest,
   AdvanceResponse,
   RecentTelemetryRequest,
+  CleansingRequest,
+  CleansingResponse,
 } from '../generated/epoch';
 import type {
   TelemetryEvent,
@@ -87,6 +91,7 @@ export class LogisticsGrpcClient implements ILogisticsClient {
   private readonly rebellionClient: RebellionServiceClient;
   private readonly simulationClient: SimulationServiceClient;
   private readonly telemetryClient: TelemetryServiceClient;
+  private readonly cleansingClient: CleansingServiceClient;
   private readonly deadlineMs: number;
   private telemetryStream: grpc.ClientReadableStream<TelemetryEvent> | null = null;
 
@@ -98,6 +103,7 @@ export class LogisticsGrpcClient implements ILogisticsClient {
     this.rebellionClient = new RebellionServiceClient(host, credentials);
     this.simulationClient = new SimulationServiceClient(host, credentials);
     this.telemetryClient = new TelemetryServiceClient(host, credentials);
+    this.cleansingClient = new CleansingServiceClient(host, credentials);
     this.deadlineMs = deadlineMs;
   }
 
@@ -206,6 +212,42 @@ export class LogisticsGrpcClient implements ILogisticsClient {
   }
 
   /**
+   * Deploy a Sheriff Protocol cleansing operation against an active Plague Heart.
+   */
+  async deployCleansingOperation(npcIds?: string[]): Promise<CleansingResult> {
+    const request: CleansingRequest = {
+      npcIds: npcIds ?? [],
+    };
+
+    const response = await this.unaryCall<CleansingRequest, CleansingResponse>(
+      this.cleansingClient,
+      'deployCleansingOperation',
+      request,
+    );
+
+    return {
+      success: response.success,
+      successRate: response.successRate,
+      participantCount: response.participantCount,
+      participantIds: response.participantIds ?? [],
+      rolledValue: response.rolledValue,
+      factors: response.factors ? {
+        base: response.factors.base,
+        avgMorale: response.factors.avgMorale,
+        moraleContribution: response.factors.moraleContribution,
+        avgTrauma: response.factors.avgTrauma,
+        traumaPenalty: response.factors.traumaPenalty,
+        avgConfidence: response.factors.avgConfidence,
+        confidenceContribution: response.factors.confidenceContribution,
+      } : {
+        base: 0, avgMorale: 0, moraleContribution: 0,
+        avgTrauma: 0, traumaPenalty: 0, avgConfidence: 0, confidenceContribution: 0,
+      },
+      errorMessage: response.errorMessage || undefined,
+    };
+  }
+
+  /**
    * Subscribe to real-time telemetry stream from the Go logistics backend.
    * Events are delivered to the handler with 0ms tolerance (as fast as gRPC delivers).
    * Returns a function to cancel the stream subscription.
@@ -274,6 +316,7 @@ export class LogisticsGrpcClient implements ILogisticsClient {
     this.rebellionClient.close();
     this.simulationClient.close();
     this.telemetryClient.close();
+    this.cleansingClient.close();
   }
 
   // ---------------------------------------------------------------------------

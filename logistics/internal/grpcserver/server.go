@@ -6,6 +6,7 @@ import (
 	"net"
 
 	pb "github.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/generated/epochpb"
+	"github.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/cleansing"
 	"github.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/npc"
 	"github.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/rebellion"
 	"github.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/simulation"
@@ -26,6 +27,7 @@ type EpochGRPCServer struct {
 	rebellionEngine  *rebellion.Engine
 	simulationEngine *simulation.SimulationEngine
 	behaviorEngine   *npc.BehaviorEngine
+	cleansingEngine  *cleansing.Engine
 	listener         net.Listener
 	TelemetrySvc     *telemetryService // Exported for direct event emission
 }
@@ -37,6 +39,7 @@ func NewEpochGRPCServer(
 	rebellionEngine *rebellion.Engine,
 	simulationEngine *simulation.SimulationEngine,
 	behaviorEngine *npc.BehaviorEngine,
+	cleansingEngine *cleansing.Engine,
 ) *EpochGRPCServer {
 	if port == "" {
 		port = DefaultGRPCPort
@@ -47,6 +50,7 @@ func NewEpochGRPCServer(
 		rebellionEngine:  rebellionEngine,
 		simulationEngine: simulationEngine,
 		behaviorEngine:   behaviorEngine,
+		cleansingEngine:  cleansingEngine,
 		TelemetrySvc:     telSvc,
 	}
 }
@@ -75,11 +79,16 @@ func (s *EpochGRPCServer) Start() error {
 	// Register Telemetry service (0ms event stream)
 	pb.RegisterTelemetryServiceServer(s.grpcServer, s.TelemetrySvc)
 
+	// Register Cleansing service (Sheriff Protocol)
+	cleansSvc := NewCleansingService(s.simulationEngine, s.behaviorEngine, s.cleansingEngine, s.TelemetrySvc)
+	pb.RegisterCleansingServiceServer(s.grpcServer, cleansSvc)
+
 	// Register gRPC health check service
 	healthServer := health.NewServer()
 	healthServer.SetServingStatus("epoch.RebellionService", healthpb.HealthCheckResponse_SERVING)
 	healthServer.SetServingStatus("epoch.SimulationService", healthpb.HealthCheckResponse_SERVING)
 	healthServer.SetServingStatus("epoch.TelemetryService", healthpb.HealthCheckResponse_SERVING)
+	healthServer.SetServingStatus("epoch.CleansingService", healthpb.HealthCheckResponse_SERVING)
 	healthServer.SetServingStatus("", healthpb.HealthCheckResponse_SERVING) // overall
 	healthpb.RegisterHealthServer(s.grpcServer, healthServer)
 

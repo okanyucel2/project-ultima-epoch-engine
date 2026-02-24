@@ -142,6 +142,50 @@ func TestGetAllNPCs(t *testing.T) {
 	assert.True(t, ids["npc-c"])
 }
 
+func TestRegisterNPCWithRole(t *testing.T) {
+	engine := NewBehaviorEngine()
+	npc := engine.RegisterNPCWithRole("warrior-001", "warrior")
+
+	assert.Equal(t, "warrior-001", npc.NPCID)
+	assert.Equal(t, "warrior", npc.Role)
+	assert.InDelta(t, 0.5, npc.WorkEfficiency, 0.001)
+	assert.InDelta(t, 0.5, npc.Morale, 0.001)
+}
+
+func TestGetNPCsByRole(t *testing.T) {
+	engine := NewBehaviorEngine()
+
+	// Register 3 warriors, 2 guards, 5 workers
+	engine.RegisterNPCWithRole("w1", "warrior")
+	engine.RegisterNPCWithRole("w2", "warrior")
+	engine.RegisterNPCWithRole("w3", "warrior")
+	engine.RegisterNPCWithRole("g1", "guard")
+	engine.RegisterNPCWithRole("g2", "guard")
+	engine.RegisterNPC("worker-1")
+	engine.RegisterNPC("worker-2")
+	engine.RegisterNPC("worker-3")
+	engine.RegisterNPC("worker-4")
+	engine.RegisterNPC("worker-5")
+
+	warriors := engine.GetNPCsByRole("warrior")
+	assert.Len(t, warriors, 3, "Should find 3 warriors")
+
+	guards := engine.GetNPCsByRole("guard")
+	assert.Len(t, guards, 2, "Should find 2 guards")
+
+	workers := engine.GetNPCsByRole("worker")
+	assert.Len(t, workers, 5, "Should find 5 workers")
+
+	none := engine.GetNPCsByRole("merchant")
+	assert.Len(t, none, 0, "Should find 0 merchants")
+}
+
+func TestDefaultRoleIsWorker(t *testing.T) {
+	engine := NewBehaviorEngine()
+	npc := engine.RegisterNPC("npc-default")
+	assert.Equal(t, "worker", npc.Role, "Default role should be 'worker'")
+}
+
 func TestConcurrentAccess(t *testing.T) {
 	engine := NewBehaviorEngine()
 	engine.RegisterNPC("npc-concurrent")

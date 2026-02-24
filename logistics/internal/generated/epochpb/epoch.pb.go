@@ -845,6 +845,234 @@ func (x *TelemetryAck) GetRejectionReason() string {
 	return ""
 }
 
+type CleansingRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	NpcIds        []string               `protobuf:"bytes,1,rep,name=npc_ids,json=npcIds,proto3" json:"npc_ids,omitempty"` // Empty = auto-select warriors/guards
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CleansingRequest) Reset() {
+	*x = CleansingRequest{}
+	mi := &file_epoch_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CleansingRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CleansingRequest) ProtoMessage() {}
+
+func (x *CleansingRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_epoch_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CleansingRequest.ProtoReflect.Descriptor instead.
+func (*CleansingRequest) Descriptor() ([]byte, []int) {
+	return file_epoch_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *CleansingRequest) GetNpcIds() []string {
+	if x != nil {
+		return x.NpcIds
+	}
+	return nil
+}
+
+type CleansingResponse struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Success          bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	SuccessRate      float64                `protobuf:"fixed64,2,opt,name=success_rate,json=successRate,proto3" json:"success_rate,omitempty"`
+	ParticipantCount int32                  `protobuf:"varint,3,opt,name=participant_count,json=participantCount,proto3" json:"participant_count,omitempty"`
+	ParticipantIds   []string               `protobuf:"bytes,4,rep,name=participant_ids,json=participantIds,proto3" json:"participant_ids,omitempty"`
+	RolledValue      float64                `protobuf:"fixed64,5,opt,name=rolled_value,json=rolledValue,proto3" json:"rolled_value,omitempty"`
+	Factors          *CleansingFactors      `protobuf:"bytes,6,opt,name=factors,proto3" json:"factors,omitempty"`
+	ErrorMessage     string                 `protobuf:"bytes,7,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *CleansingResponse) Reset() {
+	*x = CleansingResponse{}
+	mi := &file_epoch_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CleansingResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CleansingResponse) ProtoMessage() {}
+
+func (x *CleansingResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_epoch_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CleansingResponse.ProtoReflect.Descriptor instead.
+func (*CleansingResponse) Descriptor() ([]byte, []int) {
+	return file_epoch_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *CleansingResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *CleansingResponse) GetSuccessRate() float64 {
+	if x != nil {
+		return x.SuccessRate
+	}
+	return 0
+}
+
+func (x *CleansingResponse) GetParticipantCount() int32 {
+	if x != nil {
+		return x.ParticipantCount
+	}
+	return 0
+}
+
+func (x *CleansingResponse) GetParticipantIds() []string {
+	if x != nil {
+		return x.ParticipantIds
+	}
+	return nil
+}
+
+func (x *CleansingResponse) GetRolledValue() float64 {
+	if x != nil {
+		return x.RolledValue
+	}
+	return 0
+}
+
+func (x *CleansingResponse) GetFactors() *CleansingFactors {
+	if x != nil {
+		return x.Factors
+	}
+	return nil
+}
+
+func (x *CleansingResponse) GetErrorMessage() string {
+	if x != nil {
+		return x.ErrorMessage
+	}
+	return ""
+}
+
+type CleansingFactors struct {
+	state                  protoimpl.MessageState `protogen:"open.v1"`
+	Base                   float64                `protobuf:"fixed64,1,opt,name=base,proto3" json:"base,omitempty"`
+	AvgMorale              float64                `protobuf:"fixed64,2,opt,name=avg_morale,json=avgMorale,proto3" json:"avg_morale,omitempty"`
+	MoraleContribution     float64                `protobuf:"fixed64,3,opt,name=morale_contribution,json=moraleContribution,proto3" json:"morale_contribution,omitempty"`
+	AvgTrauma              float64                `protobuf:"fixed64,4,opt,name=avg_trauma,json=avgTrauma,proto3" json:"avg_trauma,omitempty"`
+	TraumaPenalty          float64                `protobuf:"fixed64,5,opt,name=trauma_penalty,json=traumaPenalty,proto3" json:"trauma_penalty,omitempty"`
+	AvgConfidence          float64                `protobuf:"fixed64,6,opt,name=avg_confidence,json=avgConfidence,proto3" json:"avg_confidence,omitempty"`
+	ConfidenceContribution float64                `protobuf:"fixed64,7,opt,name=confidence_contribution,json=confidenceContribution,proto3" json:"confidence_contribution,omitempty"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *CleansingFactors) Reset() {
+	*x = CleansingFactors{}
+	mi := &file_epoch_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CleansingFactors) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CleansingFactors) ProtoMessage() {}
+
+func (x *CleansingFactors) ProtoReflect() protoreflect.Message {
+	mi := &file_epoch_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CleansingFactors.ProtoReflect.Descriptor instead.
+func (*CleansingFactors) Descriptor() ([]byte, []int) {
+	return file_epoch_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *CleansingFactors) GetBase() float64 {
+	if x != nil {
+		return x.Base
+	}
+	return 0
+}
+
+func (x *CleansingFactors) GetAvgMorale() float64 {
+	if x != nil {
+		return x.AvgMorale
+	}
+	return 0
+}
+
+func (x *CleansingFactors) GetMoraleContribution() float64 {
+	if x != nil {
+		return x.MoraleContribution
+	}
+	return 0
+}
+
+func (x *CleansingFactors) GetAvgTrauma() float64 {
+	if x != nil {
+		return x.AvgTrauma
+	}
+	return 0
+}
+
+func (x *CleansingFactors) GetTraumaPenalty() float64 {
+	if x != nil {
+		return x.TraumaPenalty
+	}
+	return 0
+}
+
+func (x *CleansingFactors) GetAvgConfidence() float64 {
+	if x != nil {
+		return x.AvgConfidence
+	}
+	return 0
+}
+
+func (x *CleansingFactors) GetConfidenceContribution() float64 {
+	if x != nil {
+		return x.ConfidenceContribution
+	}
+	return 0
+}
+
 var File_epoch_proto protoreflect.FileDescriptor
 
 const file_epoch_proto_rawDesc = "" +
@@ -904,7 +1132,27 @@ const file_epoch_proto_rawDesc = "" +
 	"\fTelemetryAck\x12\x19\n" +
 	"\bevent_id\x18\x01 \x01(\tR\aeventId\x12\x1a\n" +
 	"\baccepted\x18\x02 \x01(\bR\baccepted\x12)\n" +
-	"\x10rejection_reason\x18\x03 \x01(\tR\x0frejectionReason2\xf2\x01\n" +
+	"\x10rejection_reason\x18\x03 \x01(\tR\x0frejectionReason\"+\n" +
+	"\x10CleansingRequest\x12\x17\n" +
+	"\anpc_ids\x18\x01 \x03(\tR\x06npcIds\"\xa1\x02\n" +
+	"\x11CleansingResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12!\n" +
+	"\fsuccess_rate\x18\x02 \x01(\x01R\vsuccessRate\x12+\n" +
+	"\x11participant_count\x18\x03 \x01(\x05R\x10participantCount\x12'\n" +
+	"\x0fparticipant_ids\x18\x04 \x03(\tR\x0eparticipantIds\x12!\n" +
+	"\frolled_value\x18\x05 \x01(\x01R\vrolledValue\x121\n" +
+	"\afactors\x18\x06 \x01(\v2\x17.epoch.CleansingFactorsR\afactors\x12#\n" +
+	"\rerror_message\x18\a \x01(\tR\ferrorMessage\"\x9c\x02\n" +
+	"\x10CleansingFactors\x12\x12\n" +
+	"\x04base\x18\x01 \x01(\x01R\x04base\x12\x1d\n" +
+	"\n" +
+	"avg_morale\x18\x02 \x01(\x01R\tavgMorale\x12/\n" +
+	"\x13morale_contribution\x18\x03 \x01(\x01R\x12moraleContribution\x12\x1d\n" +
+	"\n" +
+	"avg_trauma\x18\x04 \x01(\x01R\tavgTrauma\x12%\n" +
+	"\x0etrauma_penalty\x18\x05 \x01(\x01R\rtraumaPenalty\x12%\n" +
+	"\x0eavg_confidence\x18\x06 \x01(\x01R\ravgConfidence\x127\n" +
+	"\x17confidence_contribution\x18\a \x01(\x01R\x16confidenceContribution2\xf2\x01\n" +
 	"\x10RebellionService\x12L\n" +
 	"\x17GetRebellionProbability\x12\x17.epoch.RebellionRequest\x1a\x18.epoch.RebellionResponse\x12M\n" +
 	"\x10ProcessNPCAction\x12\x1b.epoch.ProcessActionRequest\x1a\x1c.epoch.ProcessActionResponse\x12A\n" +
@@ -916,7 +1164,9 @@ const file_epoch_proto_rawDesc = "" +
 	"\x10TelemetryService\x12V\n" +
 	"\x0fStreamTelemetry\x12 .epoch.telemetry.TelemetryFilter\x1a\x1f.epoch.telemetry.TelemetryEvent0\x01\x12T\n" +
 	"\x12GetRecentTelemetry\x12\x1d.epoch.RecentTelemetryRequest\x1a\x1f.epoch.telemetry.TelemetryBatch\x12L\n" +
-	"\x14ReportTelemetryEvent\x12\x1f.epoch.telemetry.TelemetryEvent\x1a\x13.epoch.TelemetryAckBXZVgithub.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/generated/epochpbb\x06proto3"
+	"\x14ReportTelemetryEvent\x12\x1f.epoch.telemetry.TelemetryEvent\x1a\x13.epoch.TelemetryAck2a\n" +
+	"\x10CleansingService\x12M\n" +
+	"\x18DeployCleansingOperation\x12\x17.epoch.CleansingRequest\x1a\x18.epoch.CleansingResponseBXZVgithub.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/generated/epochpbb\x06proto3"
 
 var (
 	file_epoch_proto_rawDescOnce sync.Once
@@ -930,7 +1180,7 @@ func file_epoch_proto_rawDescGZIP() []byte {
 	return file_epoch_proto_rawDescData
 }
 
-var file_epoch_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_epoch_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
 var file_epoch_proto_goTypes = []any{
 	(*RebellionRequest)(nil),           // 0: epoch.RebellionRequest
 	(*RebellionResponse)(nil),          // 1: epoch.RebellionResponse
@@ -946,55 +1196,61 @@ var file_epoch_proto_goTypes = []any{
 	(*AdvanceResponse)(nil),            // 11: epoch.AdvanceResponse
 	(*RecentTelemetryRequest)(nil),     // 12: epoch.RecentTelemetryRequest
 	(*TelemetryAck)(nil),               // 13: epoch.TelemetryAck
-	(*EpochTimestamp)(nil),             // 14: epoch.common.EpochTimestamp
-	(*NPCAction)(nil),                  // 15: epoch.npc.NPCAction
-	(*NPCState)(nil),                   // 16: epoch.npc.NPCState
-	(*RebellionEvent)(nil),             // 17: epoch.npc.RebellionEvent
-	(ResourceType)(0),                  // 18: epoch.simulation.ResourceType
-	(*SimulationStatus)(nil),           // 19: epoch.simulation.SimulationStatus
-	(*TelemetryBatch)(nil),             // 20: epoch.telemetry.TelemetryBatch
-	(TelemetrySeverity)(0),             // 21: epoch.telemetry.TelemetrySeverity
-	(*TelemetryFilter)(nil),            // 22: epoch.telemetry.TelemetryFilter
-	(*TelemetryEvent)(nil),             // 23: epoch.telemetry.TelemetryEvent
+	(*CleansingRequest)(nil),           // 14: epoch.CleansingRequest
+	(*CleansingResponse)(nil),          // 15: epoch.CleansingResponse
+	(*CleansingFactors)(nil),           // 16: epoch.CleansingFactors
+	(*EpochTimestamp)(nil),             // 17: epoch.common.EpochTimestamp
+	(*NPCAction)(nil),                  // 18: epoch.npc.NPCAction
+	(*NPCState)(nil),                   // 19: epoch.npc.NPCState
+	(*RebellionEvent)(nil),             // 20: epoch.npc.RebellionEvent
+	(ResourceType)(0),                  // 21: epoch.simulation.ResourceType
+	(*SimulationStatus)(nil),           // 22: epoch.simulation.SimulationStatus
+	(*TelemetryBatch)(nil),             // 23: epoch.telemetry.TelemetryBatch
+	(TelemetrySeverity)(0),             // 24: epoch.telemetry.TelemetrySeverity
+	(*TelemetryFilter)(nil),            // 25: epoch.telemetry.TelemetryFilter
+	(*TelemetryEvent)(nil),             // 26: epoch.telemetry.TelemetryEvent
 }
 var file_epoch_proto_depIdxs = []int32{
 	2,  // 0: epoch.RebellionResponse.factors:type_name -> epoch.RebellionFactors
-	14, // 1: epoch.RebellionResponse.calculated_at:type_name -> epoch.common.EpochTimestamp
-	15, // 2: epoch.ProcessActionRequest.action:type_name -> epoch.npc.NPCAction
-	16, // 3: epoch.ProcessActionResponse.updated_state:type_name -> epoch.npc.NPCState
-	17, // 4: epoch.ProcessActionResponse.rebellion_event:type_name -> epoch.npc.RebellionEvent
-	16, // 5: epoch.NPCEventStream.state:type_name -> epoch.npc.NPCState
-	17, // 6: epoch.NPCEventStream.rebellion:type_name -> epoch.npc.RebellionEvent
-	14, // 7: epoch.NPCEventStream.timestamp:type_name -> epoch.common.EpochTimestamp
-	18, // 8: epoch.ResourceAllocationRequest.resource_type:type_name -> epoch.simulation.ResourceType
-	19, // 9: epoch.ResourceAllocationResponse.updated_status:type_name -> epoch.simulation.SimulationStatus
-	19, // 10: epoch.AdvanceResponse.status:type_name -> epoch.simulation.SimulationStatus
+	17, // 1: epoch.RebellionResponse.calculated_at:type_name -> epoch.common.EpochTimestamp
+	18, // 2: epoch.ProcessActionRequest.action:type_name -> epoch.npc.NPCAction
+	19, // 3: epoch.ProcessActionResponse.updated_state:type_name -> epoch.npc.NPCState
+	20, // 4: epoch.ProcessActionResponse.rebellion_event:type_name -> epoch.npc.RebellionEvent
+	19, // 5: epoch.NPCEventStream.state:type_name -> epoch.npc.NPCState
+	20, // 6: epoch.NPCEventStream.rebellion:type_name -> epoch.npc.RebellionEvent
+	17, // 7: epoch.NPCEventStream.timestamp:type_name -> epoch.common.EpochTimestamp
+	21, // 8: epoch.ResourceAllocationRequest.resource_type:type_name -> epoch.simulation.ResourceType
+	22, // 9: epoch.ResourceAllocationResponse.updated_status:type_name -> epoch.simulation.SimulationStatus
+	22, // 10: epoch.AdvanceResponse.status:type_name -> epoch.simulation.SimulationStatus
 	6,  // 11: epoch.AdvanceResponse.events:type_name -> epoch.NPCEventStream
-	20, // 12: epoch.AdvanceResponse.telemetry:type_name -> epoch.telemetry.TelemetryBatch
-	21, // 13: epoch.RecentTelemetryRequest.min_severity:type_name -> epoch.telemetry.TelemetrySeverity
-	0,  // 14: epoch.RebellionService.GetRebellionProbability:input_type -> epoch.RebellionRequest
-	3,  // 15: epoch.RebellionService.ProcessNPCAction:input_type -> epoch.ProcessActionRequest
-	5,  // 16: epoch.RebellionService.StreamNPCEvents:input_type -> epoch.NPCEventFilter
-	7,  // 17: epoch.SimulationService.GetSimulationStatus:input_type -> epoch.SimStatusRequest
-	8,  // 18: epoch.SimulationService.UpdateResourceAllocation:input_type -> epoch.ResourceAllocationRequest
-	10, // 19: epoch.SimulationService.AdvanceSimulation:input_type -> epoch.AdvanceRequest
-	22, // 20: epoch.TelemetryService.StreamTelemetry:input_type -> epoch.telemetry.TelemetryFilter
-	12, // 21: epoch.TelemetryService.GetRecentTelemetry:input_type -> epoch.RecentTelemetryRequest
-	23, // 22: epoch.TelemetryService.ReportTelemetryEvent:input_type -> epoch.telemetry.TelemetryEvent
-	1,  // 23: epoch.RebellionService.GetRebellionProbability:output_type -> epoch.RebellionResponse
-	4,  // 24: epoch.RebellionService.ProcessNPCAction:output_type -> epoch.ProcessActionResponse
-	6,  // 25: epoch.RebellionService.StreamNPCEvents:output_type -> epoch.NPCEventStream
-	19, // 26: epoch.SimulationService.GetSimulationStatus:output_type -> epoch.simulation.SimulationStatus
-	9,  // 27: epoch.SimulationService.UpdateResourceAllocation:output_type -> epoch.ResourceAllocationResponse
-	11, // 28: epoch.SimulationService.AdvanceSimulation:output_type -> epoch.AdvanceResponse
-	23, // 29: epoch.TelemetryService.StreamTelemetry:output_type -> epoch.telemetry.TelemetryEvent
-	20, // 30: epoch.TelemetryService.GetRecentTelemetry:output_type -> epoch.telemetry.TelemetryBatch
-	13, // 31: epoch.TelemetryService.ReportTelemetryEvent:output_type -> epoch.TelemetryAck
-	23, // [23:32] is the sub-list for method output_type
-	14, // [14:23] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	23, // 12: epoch.AdvanceResponse.telemetry:type_name -> epoch.telemetry.TelemetryBatch
+	24, // 13: epoch.RecentTelemetryRequest.min_severity:type_name -> epoch.telemetry.TelemetrySeverity
+	16, // 14: epoch.CleansingResponse.factors:type_name -> epoch.CleansingFactors
+	0,  // 15: epoch.RebellionService.GetRebellionProbability:input_type -> epoch.RebellionRequest
+	3,  // 16: epoch.RebellionService.ProcessNPCAction:input_type -> epoch.ProcessActionRequest
+	5,  // 17: epoch.RebellionService.StreamNPCEvents:input_type -> epoch.NPCEventFilter
+	7,  // 18: epoch.SimulationService.GetSimulationStatus:input_type -> epoch.SimStatusRequest
+	8,  // 19: epoch.SimulationService.UpdateResourceAllocation:input_type -> epoch.ResourceAllocationRequest
+	10, // 20: epoch.SimulationService.AdvanceSimulation:input_type -> epoch.AdvanceRequest
+	25, // 21: epoch.TelemetryService.StreamTelemetry:input_type -> epoch.telemetry.TelemetryFilter
+	12, // 22: epoch.TelemetryService.GetRecentTelemetry:input_type -> epoch.RecentTelemetryRequest
+	26, // 23: epoch.TelemetryService.ReportTelemetryEvent:input_type -> epoch.telemetry.TelemetryEvent
+	14, // 24: epoch.CleansingService.DeployCleansingOperation:input_type -> epoch.CleansingRequest
+	1,  // 25: epoch.RebellionService.GetRebellionProbability:output_type -> epoch.RebellionResponse
+	4,  // 26: epoch.RebellionService.ProcessNPCAction:output_type -> epoch.ProcessActionResponse
+	6,  // 27: epoch.RebellionService.StreamNPCEvents:output_type -> epoch.NPCEventStream
+	22, // 28: epoch.SimulationService.GetSimulationStatus:output_type -> epoch.simulation.SimulationStatus
+	9,  // 29: epoch.SimulationService.UpdateResourceAllocation:output_type -> epoch.ResourceAllocationResponse
+	11, // 30: epoch.SimulationService.AdvanceSimulation:output_type -> epoch.AdvanceResponse
+	26, // 31: epoch.TelemetryService.StreamTelemetry:output_type -> epoch.telemetry.TelemetryEvent
+	23, // 32: epoch.TelemetryService.GetRecentTelemetry:output_type -> epoch.telemetry.TelemetryBatch
+	13, // 33: epoch.TelemetryService.ReportTelemetryEvent:output_type -> epoch.TelemetryAck
+	15, // 34: epoch.CleansingService.DeployCleansingOperation:output_type -> epoch.CleansingResponse
+	25, // [25:35] is the sub-list for method output_type
+	15, // [15:25] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_epoch_proto_init() }
@@ -1012,9 +1268,9 @@ func file_epoch_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_epoch_proto_rawDesc), len(file_epoch_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   14,
+			NumMessages:   17,
 			NumExtensions: 0,
-			NumServices:   3,
+			NumServices:   4,
 		},
 		GoTypes:           file_epoch_proto_goTypes,
 		DependencyIndexes: file_epoch_proto_depIdxs,

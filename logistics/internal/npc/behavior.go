@@ -9,6 +9,7 @@ import (
 // NPCBehavior represents the behavioral state of a single NPC in the simulation.
 type NPCBehavior struct {
 	NPCID          string
+	Role           string  // NPC role: "worker", "warrior", "guard"
 	WorkEfficiency float64 // 0.0-1.0: current work output efficiency
 	Morale         float64 // 0.0-1.0: current morale level
 	AssignedTask   string  // Current task assignment (empty if unassigned)
@@ -39,12 +40,49 @@ func (b *BehaviorEngine) RegisterNPC(npcID string) *NPCBehavior {
 
 	npc := &NPCBehavior{
 		NPCID:          npcID,
+		Role:           "worker",
 		WorkEfficiency: 0.5,
 		Morale:         0.5,
 		AssignedTask:   "",
 	}
 	b.npcs[npcID] = npc
 	return npc
+}
+
+// RegisterNPCWithRole adds an NPC with a specific role (e.g. "warrior", "guard", "worker").
+// If the NPC is already registered, updates the role and returns the existing entry.
+func (b *BehaviorEngine) RegisterNPCWithRole(npcID, role string) *NPCBehavior {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	if existing, ok := b.npcs[npcID]; ok {
+		existing.Role = role
+		return existing
+	}
+
+	npc := &NPCBehavior{
+		NPCID:          npcID,
+		Role:           role,
+		WorkEfficiency: 0.5,
+		Morale:         0.5,
+		AssignedTask:   "",
+	}
+	b.npcs[npcID] = npc
+	return npc
+}
+
+// GetNPCsByRole returns all NPCs with the specified role.
+func (b *BehaviorEngine) GetNPCsByRole(role string) []*NPCBehavior {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+
+	result := make([]*NPCBehavior, 0)
+	for _, npc := range b.npcs {
+		if npc.Role == role {
+			result = append(result, npc)
+		}
+	}
+	return result
 }
 
 // GetNPC returns the behavioral state of the specified NPC.

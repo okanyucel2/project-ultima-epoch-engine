@@ -1,6 +1,9 @@
 package infestation
 
-import "sync"
+import (
+	"errors"
+	"sync"
+)
 
 // Engine manages infestation state: accumulation when rebellion+trauma are high,
 // decay otherwise, with hysteresis for Plague Heart activation/deactivation.
@@ -82,4 +85,20 @@ func (e *Engine) GetState() InfestationState {
 // GetConfig returns the engine's configuration.
 func (e *Engine) GetConfig() InfestationConfig {
 	return e.config
+}
+
+// Cleanse resets the infestation state after a successful Sheriff Protocol operation.
+// Returns error if Plague Heart is not currently active.
+func (e *Engine) Cleanse() error {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	if !e.state.IsPlagueHeart {
+		return errors.New("cannot cleanse: Plague Heart is not active")
+	}
+
+	e.state.Counter = 0
+	e.state.IsPlagueHeart = false
+	e.state.ThrottleMultiplier = 1.0
+	return nil
 }

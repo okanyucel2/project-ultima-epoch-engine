@@ -31,6 +31,11 @@ function createMockClient(overrides: Partial<ILogisticsClient> = {}): ILogistics
       refineries: 3, mines: 5, resources: [],
       overallRebellionProbability: 0.30, activeNpcs: 12, tickCount: 43,
     }),
+    deployCleansingOperation: jest.fn().mockResolvedValue({
+      success: true, successRate: 0.72, participantCount: 2,
+      participantIds: ['w1', 'w2'], rolledValue: 0.45,
+      factors: { base: 0.5, avgMorale: 0.7, moraleContribution: 0.175, avgTrauma: 0.3, traumaPenalty: 0.09, avgConfidence: 0.6, confidenceContribution: 0.09 },
+    }),
     ...overrides,
   };
 }

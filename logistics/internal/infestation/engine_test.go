@@ -217,6 +217,43 @@ func Test50TicksToFullActivation(t *testing.T) {
 	}
 }
 
+func TestCleanse_Success(t *testing.T) {
+	e := NewEngine(DefaultConfig())
+	// Fill to 100 → activate plague heart
+	for i := 0; i < 50; i++ {
+		e.Tick(0.50, 0.50, int64(i+1))
+	}
+	state := e.GetState()
+	if !state.IsPlagueHeart {
+		t.Fatal("Expected Plague Heart to be active at 100")
+	}
+
+	// Cleanse
+	err := e.Cleanse()
+	if err != nil {
+		t.Fatalf("Cleanse() returned unexpected error: %v", err)
+	}
+
+	state = e.GetState()
+	if state.Counter != 0 {
+		t.Errorf("Counter after cleanse = %v, want 0", state.Counter)
+	}
+	if state.IsPlagueHeart {
+		t.Error("IsPlagueHeart should be false after cleanse")
+	}
+	if state.ThrottleMultiplier != 1.0 {
+		t.Errorf("ThrottleMultiplier after cleanse = %v, want 1.0", state.ThrottleMultiplier)
+	}
+}
+
+func TestCleanse_NotActive(t *testing.T) {
+	e := NewEngine(DefaultConfig())
+	err := e.Cleanse()
+	if err == nil {
+		t.Error("Cleanse() should return error when Plague Heart is not active")
+	}
+}
+
 func TestResultFieldsPopulated(t *testing.T) {
 	e := NewEngine(DefaultConfig())
 	result := e.Tick(0.50, 0.50, 42)

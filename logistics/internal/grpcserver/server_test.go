@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/cleansing"
 	"github.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/npc"
 	"github.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/rebellion"
 	"github.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/simulation"
@@ -34,7 +35,7 @@ func TestServerStartsAndStops(t *testing.T) {
 	simEngine := simulation.NewSimulationEngine(rebEngine)
 	behaviorEngine := npc.NewBehaviorEngine()
 
-	srv := NewEpochGRPCServer(port, rebEngine, simEngine, behaviorEngine)
+	srv := NewEpochGRPCServer(port, rebEngine, simEngine, behaviorEngine, cleansing.NewEngine(cleansing.DefaultConfig()))
 	assert.Equal(t, port, srv.Port())
 
 	// Start the server in a goroutine
@@ -77,7 +78,7 @@ func TestServerRegistersServices(t *testing.T) {
 	simEngine := simulation.NewSimulationEngine(rebEngine)
 	behaviorEngine := npc.NewBehaviorEngine()
 
-	srv := NewEpochGRPCServer(port, rebEngine, simEngine, behaviorEngine)
+	srv := NewEpochGRPCServer(port, rebEngine, simEngine, behaviorEngine, cleansing.NewEngine(cleansing.DefaultConfig()))
 
 	go func() {
 		_ = srv.Start()
@@ -127,6 +128,6 @@ func TestServerDefaultPort(t *testing.T) {
 	simEngine := simulation.NewSimulationEngine(rebEngine)
 	behaviorEngine := npc.NewBehaviorEngine()
 
-	srv := NewEpochGRPCServer("", rebEngine, simEngine, behaviorEngine)
+	srv := NewEpochGRPCServer("", rebEngine, simEngine, behaviorEngine, cleansing.NewEngine(cleansing.DefaultConfig()))
 	assert.Equal(t, DefaultGRPCPort, srv.Port(), "empty port should default to DefaultGRPCPort")
 }

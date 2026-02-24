@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useInfestationMonitor } from '../composables/useInfestationMonitor';
+import { useCleansingOperation } from '../composables/useCleansingOperation';
 
 const {
   infestationLevel,
@@ -9,6 +10,14 @@ const {
   infestationLabel,
   infestationColor,
 } = useInfestationMonitor();
+
+const {
+  isDeploying,
+  showToast,
+  toastMessage,
+  toastSuccess,
+  deploy,
+} = useCleansingOperation();
 
 const progressWidth = computed(() => `${Math.min(infestationLevel.value, 100)}%`);
 
@@ -61,11 +70,36 @@ const labelBadgeClass = computed(() => {
       </div>
     </div>
 
+    <!-- Sheriff Protocol Action -->
+    <div v-if="isPlagueHeart" class="infestation-bar__actions">
+      <button
+        class="btn--sheriff"
+        :disabled="isDeploying"
+        @click="deploy"
+      >
+        <span v-if="isDeploying" class="btn--sheriff__spinner"></span>
+        <span v-else>&#9876; DEPLOY SHERIFF</span>
+      </button>
+    </div>
+
     <!-- Footer -->
     <div class="infestation-bar__footer">
       <span class="text-muted">{{ infestationLevel.toFixed(0) }} / 100</span>
     </div>
   </div>
+
+  <!-- Toast via Teleport -->
+  <Teleport to="body">
+    <Transition name="toast-slide">
+      <div
+        v-if="showToast"
+        :class="['cleansing-toast', toastSuccess ? 'cleansing-toast--success' : 'cleansing-toast--failure']"
+      >
+        <span class="cleansing-toast__icon">{{ toastSuccess ? '&#9876;' : '&#9760;' }}</span>
+        <span class="cleansing-toast__message">{{ toastMessage }}</span>
+      </div>
+    </Transition>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -145,10 +179,141 @@ const labelBadgeClass = computed(() => {
   color: var(--text-muted);
 }
 
+/* Sheriff Protocol Action Row */
+.infestation-bar__actions {
+  display: flex;
+  justify-content: center;
+  margin: 0.75rem 0 0.5rem;
+}
+
+.btn--sheriff {
+  position: relative;
+  padding: 0.6rem 1.5rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #fff;
+  background: linear-gradient(135deg, #dc2626, #991b1b);
+  border: 1px solid rgba(220, 38, 38, 0.5);
+  border-radius: 6px;
+  cursor: pointer;
+  animation: sheriff-pulse 2s ease-in-out infinite;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn--sheriff:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(220, 38, 38, 0.4);
+}
+
+.btn--sheriff:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn--sheriff:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  animation: none;
+}
+
+.btn--sheriff__spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes sheriff-pulse {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(220, 38, 38, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(220, 38, 38, 0.6);
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Footer */
 .infestation-bar__footer {
   display: flex;
   justify-content: flex-end;
   font-size: 0.8rem;
   font-family: monospace;
+}
+
+/* Toast */
+.cleansing-toast {
+  position: fixed;
+  top: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+  pointer-events: none;
+  max-width: 600px;
+}
+
+.cleansing-toast--success {
+  background: linear-gradient(135deg, #059669, #047857);
+  box-shadow: 0 4px 20px rgba(5, 150, 105, 0.4);
+  animation: pulse-glow-green 2s ease-in-out infinite;
+}
+
+.cleansing-toast--failure {
+  background: linear-gradient(135deg, #dc2626, #991b1b);
+  box-shadow: 0 4px 20px rgba(220, 38, 38, 0.4);
+  animation: pulse-glow-red 2s ease-in-out infinite;
+}
+
+.cleansing-toast__icon {
+  font-size: 1.2rem;
+}
+
+.cleansing-toast__message {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@keyframes pulse-glow-green {
+  0%, 100% { box-shadow: 0 4px 20px rgba(5, 150, 105, 0.4); }
+  50% { box-shadow: 0 4px 30px rgba(5, 150, 105, 0.7); }
+}
+
+@keyframes pulse-glow-red {
+  0%, 100% { box-shadow: 0 4px 20px rgba(220, 38, 38, 0.4); }
+  50% { box-shadow: 0 4px 30px rgba(220, 38, 38, 0.7); }
+}
+
+/* Toast slide transition */
+.toast-slide-enter-active {
+  transition: all 0.3s ease-out;
+}
+
+.toast-slide-leave-active {
+  transition: all 0.3s ease-in;
+}
+
+.toast-slide-enter-from {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-20px);
+}
+
+.toast-slide-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-20px);
 }
 </style>

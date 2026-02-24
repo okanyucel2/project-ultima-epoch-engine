@@ -190,6 +190,36 @@ export async function fetchSystemStatus(): Promise<SystemStatus> {
   return res.json();
 }
 
+// --- Cleansing Types ---
+
+export interface CleansingDeployResult {
+  success: boolean;
+  successRate: number;
+  participantCount: number;
+  participantIds: string[];
+  rolledValue: number;
+  factors: {
+    base: number;
+    avgMorale: number;
+    moraleContribution: number;
+    avgTrauma: number;
+    traumaPenalty: number;
+    avgConfidence: number;
+    confidenceContribution: number;
+  };
+  errorMessage?: string;
+}
+
+export async function deployCleansingOperation(): Promise<CleansingDeployResult> {
+  const res = await fetchWithRetry(`${API_BASE}/cleansing/deploy`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({}),
+  });
+  if (!res.ok) throw new Error(`Cleansing failed: ${res.status}`);
+  return res.json();
+}
+
 export async function submitEvent(event: GameEvent): Promise<MeshResponse> {
   const res = await fetchWithRetry(`${API_BASE}/events`, {
     method: 'POST',

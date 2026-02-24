@@ -139,3 +139,36 @@ message TelemetryAck {
   bool accepted = 2;
   string rejection_reason = 3;    // Set if not accepted (e.g., AEGIS veto)
 }
+
+// =============================================================================
+// CLEANSING SERVICE — Sheriff Protocol plague heart purge operations
+// =============================================================================
+
+service CleansingService {
+  // Deploy a cleansing operation against an active Plague Heart
+  rpc DeployCleansingOperation(CleansingRequest) returns (CleansingResponse);
+}
+
+message CleansingRequest {
+  repeated string npc_ids = 1;    // Empty = auto-select warriors/guards
+}
+
+message CleansingResponse {
+  bool success = 1;
+  double success_rate = 2;
+  int32 participant_count = 3;
+  repeated string participant_ids = 4;
+  double rolled_value = 5;
+  CleansingFactors factors = 6;
+  string error_message = 7;
+}
+
+message CleansingFactors {
+  double base = 1;
+  double avg_morale = 2;
+  double morale_contribution = 3;
+  double avg_trauma = 4;
+  double trauma_penalty = 5;
+  double avg_confidence = 6;
+  double confidence_contribution = 7;
+}

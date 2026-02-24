@@ -4,6 +4,7 @@
 
 import { createApp } from '../../src/index';
 import type { ILogisticsClient } from '../../src/services/logistics-client';
+import type { CleansingResult } from '../../../shared/types/cleansing';
 import type { Express } from 'express';
 
 // =============================================================================
@@ -47,6 +48,22 @@ export class MockLogisticsClient implements ILogisticsClient {
     this.calls.push({ method: 'advanceSimulation', args: [] });
     if (this.shouldFail) throw new Error('Logistics unavailable');
     return { tickCount: 101, activeNpcs: 5, resources: [] };
+  }
+
+  async deployCleansingOperation(npcIds?: string[]): Promise<CleansingResult> {
+    this.calls.push({ method: 'deployCleansingOperation', args: [npcIds] });
+    if (this.shouldFail) throw new Error('Logistics unavailable');
+    return {
+      success: true,
+      successRate: 0.72,
+      participantCount: 2,
+      participantIds: ['w1', 'w2'],
+      rolledValue: 0.45,
+      factors: {
+        base: 0.5, avgMorale: 0.7, moraleContribution: 0.175,
+        avgTrauma: 0.3, traumaPenalty: 0.09, avgConfidence: 0.6, confidenceContribution: 0.09,
+      },
+    };
   }
 
   reset(): void {

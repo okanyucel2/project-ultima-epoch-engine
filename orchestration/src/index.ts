@@ -35,6 +35,7 @@ import { EpochWebSocketServer } from './services/websocket-server';
 import { HealthAggregator } from './services/health-aggregator';
 import { MemoryIntegration } from './services/memory-integration';
 import { Neo4jMemoryBackend } from './services/neo4j-memory-backend';
+import { applyKarmicResolution } from './services/karmic-resolution';
 
 // Neural Mesh
 import { CognitiveRails } from './neural-mesh/cognitive-rails';
@@ -115,7 +116,7 @@ export function createApp(deps: AppDependencies = {}): AppInstance {
   // Health
   const healthAggregator = new HealthAggregator(logisticsClient, wsServer);
 
-  return { app: createExpressApp(coordinator, auditLogger, healthAggregator), coordinator, auditLogger, wsServer, healthAggregator, logisticsClient, grpcClient };
+  return { app: createExpressApp(coordinator, auditLogger, healthAggregator, logisticsClient, wsServer, memoryIntegration), coordinator, auditLogger, wsServer, healthAggregator, logisticsClient, grpcClient };
 }
 
 // =============================================================================
@@ -126,6 +127,9 @@ function createExpressApp(
   coordinator: NeuralMeshCoordinator,
   auditLogger: AuditLogger,
   healthAggregator: HealthAggregator,
+  logisticsClient?: ILogisticsClient,
+  wsServer?: EpochWebSocketServer,
+  memoryIntegration?: MemoryIntegration,
 ): express.Express {
   const app = express();
   app.use(express.json());
@@ -241,6 +245,47 @@ app.get('/api/audit', (req, res) => {
 app.get('/api/audit/stats', (_req, res) => {
   const stats = auditLogger.getStats();
   res.json(stats);
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/cleansing/deploy — Sheriff Protocol cleansing operation
+// ---------------------------------------------------------------------------
+app.post('/api/cleansing/deploy', async (req, res) => {
+  try {
+    if (!logisticsClient) {
+      res.status(503).json({ error: 'Logistics client not available' });
+      return;
+    }
+
+    const npcIds = req.body?.npc_ids as string[] | undefined;
+    const result = await logisticsClient.deployCleansingOperation(npcIds);
+
+    // Apply karmic consequences if memory is available
+    if (memoryIntegration && wsServer) {
+      try {
+        await applyKarmicResolution(result, memoryIntegration, wsServer);
+      } catch (err) {
+        // Non-fatal — log but don't fail the request
+        console.error('[MAX] Karmic resolution error:', err);
+      }
+    } else if (wsServer) {
+      // No memory but still broadcast
+      wsServer.broadcast('system-status', {
+        type: 'cleansing_result',
+        success: result.success,
+        successRate: result.successRate,
+        participantCount: result.participantCount,
+        participantIds: result.participantIds,
+      });
+    }
+
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Cleansing operation failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
 });
 
   return app;

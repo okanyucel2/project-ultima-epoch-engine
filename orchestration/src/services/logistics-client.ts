@@ -16,6 +16,7 @@
 import type { SimulationStatus } from '../../shared/types/simulation';
 import type { NPCState } from '../../shared/types/npc';
 import type { RebellionFactors } from '../../shared/types/npc';
+import type { CleansingResult } from '../../shared/types/cleansing';
 
 // =============================================================================
 // Types
@@ -44,6 +45,7 @@ export interface ILogisticsClient {
   getRebellionProbability(npcId: string): Promise<RebellionProbabilityResponse>;
   processNPCAction(npcId: string, action: NPCActionInput): Promise<NPCState>;
   advanceSimulation(): Promise<SimulationStatus>;
+  deployCleansingOperation(npcIds?: string[]): Promise<CleansingResult>;
 }
 
 // =============================================================================
@@ -112,6 +114,15 @@ export class LogisticsClient implements ILogisticsClient {
    */
   async advanceSimulation(): Promise<SimulationStatus> {
     return this.request<SimulationStatus>('POST', '/api/simulation/tick');
+  }
+
+  /**
+   * Deploy a Sheriff Protocol cleansing operation against an active Plague Heart.
+   */
+  async deployCleansingOperation(npcIds?: string[]): Promise<CleansingResult> {
+    return this.request<CleansingResult>('POST', '/api/cleansing/deploy', {
+      npc_ids: npcIds ?? [],
+    });
   }
 
   // ---------------------------------------------------------------------------

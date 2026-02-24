@@ -579,3 +579,107 @@ var TelemetryService_ServiceDesc = grpc.ServiceDesc{
 	},
 	Metadata: "epoch.proto",
 }
+
+const (
+	CleansingService_DeployCleansingOperation_FullMethodName = "/epoch.CleansingService/DeployCleansingOperation"
+)
+
+// CleansingServiceClient is the client API for CleansingService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type CleansingServiceClient interface {
+	// Deploy a cleansing operation against an active Plague Heart
+	DeployCleansingOperation(ctx context.Context, in *CleansingRequest, opts ...grpc.CallOption) (*CleansingResponse, error)
+}
+
+type cleansingServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewCleansingServiceClient(cc grpc.ClientConnInterface) CleansingServiceClient {
+	return &cleansingServiceClient{cc}
+}
+
+func (c *cleansingServiceClient) DeployCleansingOperation(ctx context.Context, in *CleansingRequest, opts ...grpc.CallOption) (*CleansingResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CleansingResponse)
+	err := c.cc.Invoke(ctx, CleansingService_DeployCleansingOperation_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// CleansingServiceServer is the server API for CleansingService service.
+// All implementations must embed UnimplementedCleansingServiceServer
+// for forward compatibility.
+type CleansingServiceServer interface {
+	// Deploy a cleansing operation against an active Plague Heart
+	DeployCleansingOperation(context.Context, *CleansingRequest) (*CleansingResponse, error)
+	mustEmbedUnimplementedCleansingServiceServer()
+}
+
+// UnimplementedCleansingServiceServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedCleansingServiceServer struct{}
+
+func (UnimplementedCleansingServiceServer) DeployCleansingOperation(context.Context, *CleansingRequest) (*CleansingResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeployCleansingOperation not implemented")
+}
+func (UnimplementedCleansingServiceServer) mustEmbedUnimplementedCleansingServiceServer() {}
+func (UnimplementedCleansingServiceServer) testEmbeddedByValue()                          {}
+
+// UnsafeCleansingServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to CleansingServiceServer will
+// result in compilation errors.
+type UnsafeCleansingServiceServer interface {
+	mustEmbedUnimplementedCleansingServiceServer()
+}
+
+func RegisterCleansingServiceServer(s grpc.ServiceRegistrar, srv CleansingServiceServer) {
+	// If the following call panics, it indicates UnimplementedCleansingServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&CleansingService_ServiceDesc, srv)
+}
+
+func _CleansingService_DeployCleansingOperation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CleansingRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CleansingServiceServer).DeployCleansingOperation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CleansingService_DeployCleansingOperation_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CleansingServiceServer).DeployCleansingOperation(ctx, req.(*CleansingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// CleansingService_ServiceDesc is the grpc.ServiceDesc for CleansingService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var CleansingService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "epoch.CleansingService",
+	HandlerType: (*CleansingServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "DeployCleansingOperation",
+			Handler:    _CleansingService_DeployCleansingOperation_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "epoch.proto",
+}

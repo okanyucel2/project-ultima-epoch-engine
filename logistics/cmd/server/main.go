@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/cleansing"
 	"github.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/economy"
 	"github.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/grpcserver"
 	"github.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/npc"
@@ -30,13 +31,14 @@ func main() {
 	simEngine := simulation.NewSimulationEngine(rebEngine)
 	behaviorEngine := npc.NewBehaviorEngine()
 	econEngine := economy.NewEconomyEngine()
+	cleansingEngine := cleansing.NewEngine(cleansing.DefaultConfig())
 
 	// Start gRPC server
 	grpcPort := os.Getenv("GRPC_PORT")
 	if grpcPort == "" {
 		grpcPort = grpcserver.DefaultGRPCPort
 	}
-	grpcSrv := grpcserver.NewEpochGRPCServer(grpcPort, rebEngine, simEngine, behaviorEngine)
+	grpcSrv := grpcserver.NewEpochGRPCServer(grpcPort, rebEngine, simEngine, behaviorEngine, cleansingEngine)
 	go func() {
 		if err := grpcSrv.Start(); err != nil {
 			log.Fatalf("[gRPC] Failed to start: %v", err)
@@ -189,6 +191,98 @@ func main() {
 			},
 			"rebellion_probability": result.Probability,
 			"halt_triggered":        result.HaltTriggered,
+		})
+	})
+
+	// Register NPC with role (testing convenience)
+	r.POST("/api/npc/:npcId/register", func(c *gin.Context) {
+		npcID := c.Param("npcId")
+		var req struct {
+			Role string `json:"role"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil {
+			req.Role = "worker"
+		}
+		if req.Role == "" {
+			req.Role = "worker"
+		}
+
+		npcBehavior := behaviorEngine.RegisterNPCWithRole(npcID, req.Role)
+		c.JSON(http.StatusOK, gin.H{
+			"npc_id":          npcBehavior.NPCID,
+			"role":            npcBehavior.Role,
+			"work_efficiency": npcBehavior.WorkEfficiency,
+			"morale":          npcBehavior.Morale,
+		})
+	})
+
+	// Deploy Sheriff Protocol cleansing operation
+	r.POST("/api/cleansing/deploy", func(c *gin.Context) {
+		// Check plague heart is active
+		infState := simEngine.GetInfestationState()
+		if !infState.IsPlagueHeart {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success":       false,
+				"error_message": "Plague Heart is not active",
+			})
+			return
+		}
+
+		// Gather warriors and guards
+		warriors := behaviorEngine.GetNPCsByRole("warrior")
+		guards := behaviorEngine.GetNPCsByRole("guard")
+
+		participants := make([]cleansing.CleansingParticipant, 0, len(warriors)+len(guards))
+		for _, w := range warriors {
+			participants = append(participants, cleansing.CleansingParticipant{
+				NPCID:      w.NPCID,
+				Role:       w.Role,
+				AvgTrauma:  1.0 - w.Morale,
+				Morale:     w.Morale,
+				Confidence: w.Morale,
+			})
+		}
+		for _, g := range guards {
+			participants = append(participants, cleansing.CleansingParticipant{
+				NPCID:      g.NPCID,
+				Role:       g.Role,
+				AvgTrauma:  1.0 - g.Morale,
+				Morale:     g.Morale,
+				Confidence: g.Morale,
+			})
+		}
+
+		result, err := cleansingEngine.Execute(participants, true)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success":       false,
+				"error_message": err.Error(),
+			})
+			return
+		}
+
+		// On success: cleanse the infestation
+		if result.Success {
+			if infEngine := simEngine.GetInfestationEngine(); infEngine != nil {
+				_ = infEngine.Cleanse()
+			}
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"success":           result.Success,
+			"success_rate":      result.SuccessRate,
+			"participant_count": result.ParticipantCount,
+			"participant_ids":   result.Participants,
+			"rolled_value":      result.RolledValue,
+			"factors": gin.H{
+				"base":                     result.Factors.BaseFactor,
+				"avg_morale":               result.Factors.AvgMorale,
+				"morale_contribution":      result.Factors.MoraleContrib,
+				"avg_trauma":               result.Factors.AvgTrauma,
+				"trauma_penalty":           result.Factors.TraumaPenalty,
+				"avg_confidence":           result.Factors.AvgConfidence,
+				"confidence_contribution":  result.Factors.ConfidenceContrib,
+			},
 		})
 	})
 

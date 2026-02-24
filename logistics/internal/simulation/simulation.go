@@ -193,6 +193,12 @@ func (s *SimulationEngine) AddRefinery(efficiency float64) string {
 	return id
 }
 
+// GetInfestationEngine returns the underlying infestation engine for direct manipulation
+// (e.g., cleansing operations). Returns nil if not initialized.
+func (s *SimulationEngine) GetInfestationEngine() *infestation.Engine {
+	return s.infestation
+}
+
 // GetInfestationState returns the current infestation state.
 func (s *SimulationEngine) GetInfestationState() infestation.InfestationState {
 	s.mu.RLock()

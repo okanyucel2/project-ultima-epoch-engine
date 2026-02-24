@@ -142,6 +142,31 @@ export interface TelemetryAck {
   rejectionReason: string;
 }
 
+export interface CleansingRequest {
+  /** Empty = auto-select warriors/guards */
+  npcIds: string[];
+}
+
+export interface CleansingResponse {
+  success: boolean;
+  successRate: number;
+  participantCount: number;
+  participantIds: string[];
+  rolledValue: number;
+  factors?: CleansingFactors | undefined;
+  errorMessage: string;
+}
+
+export interface CleansingFactors {
+  base: number;
+  avgMorale: number;
+  moraleContribution: number;
+  avgTrauma: number;
+  traumaPenalty: number;
+  avgConfidence: number;
+  confidenceContribution: number;
+}
+
 function createBaseRebellionRequest(): RebellionRequest {
   return { npcId: "", includeFactors: false };
 }
@@ -1378,6 +1403,385 @@ export const TelemetryAck = {
   },
 };
 
+function createBaseCleansingRequest(): CleansingRequest {
+  return { npcIds: [] };
+}
+
+export const CleansingRequest = {
+  encode(message: CleansingRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.npcIds) {
+      writer.uint32(10).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CleansingRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCleansingRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.npcIds.push(reader.string());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CleansingRequest {
+    return {
+      npcIds: globalThis.Array.isArray(object?.npcIds) ? object.npcIds.map((e: any) => globalThis.String(e)) : [],
+    };
+  },
+
+  toJSON(message: CleansingRequest): unknown {
+    const obj: any = {};
+    if (message.npcIds?.length) {
+      obj.npcIds = message.npcIds;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CleansingRequest>, I>>(base?: I): CleansingRequest {
+    return CleansingRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CleansingRequest>, I>>(object: I): CleansingRequest {
+    const message = createBaseCleansingRequest();
+    message.npcIds = object.npcIds?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseCleansingResponse(): CleansingResponse {
+  return {
+    success: false,
+    successRate: 0,
+    participantCount: 0,
+    participantIds: [],
+    rolledValue: 0,
+    factors: undefined,
+    errorMessage: "",
+  };
+}
+
+export const CleansingResponse = {
+  encode(message: CleansingResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.successRate !== 0) {
+      writer.uint32(17).double(message.successRate);
+    }
+    if (message.participantCount !== 0) {
+      writer.uint32(24).int32(message.participantCount);
+    }
+    for (const v of message.participantIds) {
+      writer.uint32(34).string(v!);
+    }
+    if (message.rolledValue !== 0) {
+      writer.uint32(41).double(message.rolledValue);
+    }
+    if (message.factors !== undefined) {
+      CleansingFactors.encode(message.factors, writer.uint32(50).fork()).ldelim();
+    }
+    if (message.errorMessage !== "") {
+      writer.uint32(58).string(message.errorMessage);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CleansingResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCleansingResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        case 2:
+          if (tag !== 17) {
+            break;
+          }
+
+          message.successRate = reader.double();
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.participantCount = reader.int32();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.participantIds.push(reader.string());
+          continue;
+        case 5:
+          if (tag !== 41) {
+            break;
+          }
+
+          message.rolledValue = reader.double();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.factors = CleansingFactors.decode(reader, reader.uint32());
+          continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.errorMessage = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CleansingResponse {
+    return {
+      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      successRate: isSet(object.successRate) ? globalThis.Number(object.successRate) : 0,
+      participantCount: isSet(object.participantCount) ? globalThis.Number(object.participantCount) : 0,
+      participantIds: globalThis.Array.isArray(object?.participantIds)
+        ? object.participantIds.map((e: any) => globalThis.String(e))
+        : [],
+      rolledValue: isSet(object.rolledValue) ? globalThis.Number(object.rolledValue) : 0,
+      factors: isSet(object.factors) ? CleansingFactors.fromJSON(object.factors) : undefined,
+      errorMessage: isSet(object.errorMessage) ? globalThis.String(object.errorMessage) : "",
+    };
+  },
+
+  toJSON(message: CleansingResponse): unknown {
+    const obj: any = {};
+    if (message.success !== false) {
+      obj.success = message.success;
+    }
+    if (message.successRate !== 0) {
+      obj.successRate = message.successRate;
+    }
+    if (message.participantCount !== 0) {
+      obj.participantCount = Math.round(message.participantCount);
+    }
+    if (message.participantIds?.length) {
+      obj.participantIds = message.participantIds;
+    }
+    if (message.rolledValue !== 0) {
+      obj.rolledValue = message.rolledValue;
+    }
+    if (message.factors !== undefined) {
+      obj.factors = CleansingFactors.toJSON(message.factors);
+    }
+    if (message.errorMessage !== "") {
+      obj.errorMessage = message.errorMessage;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CleansingResponse>, I>>(base?: I): CleansingResponse {
+    return CleansingResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CleansingResponse>, I>>(object: I): CleansingResponse {
+    const message = createBaseCleansingResponse();
+    message.success = object.success ?? false;
+    message.successRate = object.successRate ?? 0;
+    message.participantCount = object.participantCount ?? 0;
+    message.participantIds = object.participantIds?.map((e) => e) || [];
+    message.rolledValue = object.rolledValue ?? 0;
+    message.factors = (object.factors !== undefined && object.factors !== null)
+      ? CleansingFactors.fromPartial(object.factors)
+      : undefined;
+    message.errorMessage = object.errorMessage ?? "";
+    return message;
+  },
+};
+
+function createBaseCleansingFactors(): CleansingFactors {
+  return {
+    base: 0,
+    avgMorale: 0,
+    moraleContribution: 0,
+    avgTrauma: 0,
+    traumaPenalty: 0,
+    avgConfidence: 0,
+    confidenceContribution: 0,
+  };
+}
+
+export const CleansingFactors = {
+  encode(message: CleansingFactors, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.base !== 0) {
+      writer.uint32(9).double(message.base);
+    }
+    if (message.avgMorale !== 0) {
+      writer.uint32(17).double(message.avgMorale);
+    }
+    if (message.moraleContribution !== 0) {
+      writer.uint32(25).double(message.moraleContribution);
+    }
+    if (message.avgTrauma !== 0) {
+      writer.uint32(33).double(message.avgTrauma);
+    }
+    if (message.traumaPenalty !== 0) {
+      writer.uint32(41).double(message.traumaPenalty);
+    }
+    if (message.avgConfidence !== 0) {
+      writer.uint32(49).double(message.avgConfidence);
+    }
+    if (message.confidenceContribution !== 0) {
+      writer.uint32(57).double(message.confidenceContribution);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CleansingFactors {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCleansingFactors();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 9) {
+            break;
+          }
+
+          message.base = reader.double();
+          continue;
+        case 2:
+          if (tag !== 17) {
+            break;
+          }
+
+          message.avgMorale = reader.double();
+          continue;
+        case 3:
+          if (tag !== 25) {
+            break;
+          }
+
+          message.moraleContribution = reader.double();
+          continue;
+        case 4:
+          if (tag !== 33) {
+            break;
+          }
+
+          message.avgTrauma = reader.double();
+          continue;
+        case 5:
+          if (tag !== 41) {
+            break;
+          }
+
+          message.traumaPenalty = reader.double();
+          continue;
+        case 6:
+          if (tag !== 49) {
+            break;
+          }
+
+          message.avgConfidence = reader.double();
+          continue;
+        case 7:
+          if (tag !== 57) {
+            break;
+          }
+
+          message.confidenceContribution = reader.double();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CleansingFactors {
+    return {
+      base: isSet(object.base) ? globalThis.Number(object.base) : 0,
+      avgMorale: isSet(object.avgMorale) ? globalThis.Number(object.avgMorale) : 0,
+      moraleContribution: isSet(object.moraleContribution) ? globalThis.Number(object.moraleContribution) : 0,
+      avgTrauma: isSet(object.avgTrauma) ? globalThis.Number(object.avgTrauma) : 0,
+      traumaPenalty: isSet(object.traumaPenalty) ? globalThis.Number(object.traumaPenalty) : 0,
+      avgConfidence: isSet(object.avgConfidence) ? globalThis.Number(object.avgConfidence) : 0,
+      confidenceContribution: isSet(object.confidenceContribution)
+        ? globalThis.Number(object.confidenceContribution)
+        : 0,
+    };
+  },
+
+  toJSON(message: CleansingFactors): unknown {
+    const obj: any = {};
+    if (message.base !== 0) {
+      obj.base = message.base;
+    }
+    if (message.avgMorale !== 0) {
+      obj.avgMorale = message.avgMorale;
+    }
+    if (message.moraleContribution !== 0) {
+      obj.moraleContribution = message.moraleContribution;
+    }
+    if (message.avgTrauma !== 0) {
+      obj.avgTrauma = message.avgTrauma;
+    }
+    if (message.traumaPenalty !== 0) {
+      obj.traumaPenalty = message.traumaPenalty;
+    }
+    if (message.avgConfidence !== 0) {
+      obj.avgConfidence = message.avgConfidence;
+    }
+    if (message.confidenceContribution !== 0) {
+      obj.confidenceContribution = message.confidenceContribution;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CleansingFactors>, I>>(base?: I): CleansingFactors {
+    return CleansingFactors.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CleansingFactors>, I>>(object: I): CleansingFactors {
+    const message = createBaseCleansingFactors();
+    message.base = object.base ?? 0;
+    message.avgMorale = object.avgMorale ?? 0;
+    message.moraleContribution = object.moraleContribution ?? 0;
+    message.avgTrauma = object.avgTrauma ?? 0;
+    message.traumaPenalty = object.traumaPenalty ?? 0;
+    message.avgConfidence = object.avgConfidence ?? 0;
+    message.confidenceContribution = object.confidenceContribution ?? 0;
+    return message;
+  },
+};
+
 export type RebellionServiceService = typeof RebellionServiceService;
 export const RebellionServiceService = {
   /** Get rebellion probability for a specific NPC */
@@ -1677,6 +2081,53 @@ export const TelemetryServiceClient = makeGenericClientConstructor(
 ) as unknown as {
   new (address: string, credentials: ChannelCredentials, options?: Partial<ClientOptions>): TelemetryServiceClient;
   service: typeof TelemetryServiceService;
+  serviceName: string;
+};
+
+export type CleansingServiceService = typeof CleansingServiceService;
+export const CleansingServiceService = {
+  /** Deploy a cleansing operation against an active Plague Heart */
+  deployCleansingOperation: {
+    path: "/epoch.CleansingService/DeployCleansingOperation",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: CleansingRequest) => Buffer.from(CleansingRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer) => CleansingRequest.decode(value),
+    responseSerialize: (value: CleansingResponse) => Buffer.from(CleansingResponse.encode(value).finish()),
+    responseDeserialize: (value: Buffer) => CleansingResponse.decode(value),
+  },
+} as const;
+
+export interface CleansingServiceServer extends UntypedServiceImplementation {
+  /** Deploy a cleansing operation against an active Plague Heart */
+  deployCleansingOperation: handleUnaryCall<CleansingRequest, CleansingResponse>;
+}
+
+export interface CleansingServiceClient extends Client {
+  /** Deploy a cleansing operation against an active Plague Heart */
+  deployCleansingOperation(
+    request: CleansingRequest,
+    callback: (error: ServiceError | null, response: CleansingResponse) => void,
+  ): ClientUnaryCall;
+  deployCleansingOperation(
+    request: CleansingRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: CleansingResponse) => void,
+  ): ClientUnaryCall;
+  deployCleansingOperation(
+    request: CleansingRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: CleansingResponse) => void,
+  ): ClientUnaryCall;
+}
+
+export const CleansingServiceClient = makeGenericClientConstructor(
+  CleansingServiceService,
+  "epoch.CleansingService",
+) as unknown as {
+  new (address: string, credentials: ChannelCredentials, options?: Partial<ClientOptions>): CleansingServiceClient;
+  service: typeof CleansingServiceService;
   serviceName: string;
 };
 

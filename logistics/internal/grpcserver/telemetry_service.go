@@ -270,6 +270,42 @@ func (s *telemetryService) EmitPermanentTrauma(
 		npcID, traumaType, severity, affectedAttribute, attributeReduction)
 }
 
+// EmitCleansingResult emits a telemetry event for a Sheriff Protocol cleansing operation.
+func (s *telemetryService) EmitCleansingResult(success bool, participantIDs []string, successRate float64) {
+	severity := pb.TelemetrySeverity_TELEMETRY_SEVERITY_INFO
+	cause := fmt.Sprintf("Sheriff Protocol SUCCEEDED — %d heroes cleansed the Plague Heart (%.0f%% chance)", len(participantIDs), successRate*100)
+	if !success {
+		severity = pb.TelemetrySeverity_TELEMETRY_SEVERITY_WARNING
+		cause = fmt.Sprintf("Sheriff Protocol FAILED — %d NPCs suffer Survivor's Guilt (%.0f%% chance)", len(participantIDs), successRate*100)
+	}
+
+	now := time.Now().UTC()
+	event := &pb.TelemetryEvent{
+		EventId:  fmt.Sprintf("cleansing-%d", now.UnixNano()),
+		NpcId:    "system",
+		Severity: severity,
+		Timestamp: &pb.EpochTimestamp{
+			Iso8601: now.Format(time.RFC3339),
+			UnixMs:  now.UnixMilli(),
+		},
+		Payload: &pb.TelemetryEvent_StateChange{
+			StateChange: &pb.StateChangeEvent{
+				Attribute: "cleansing_result",
+				OldValue:  0,
+				NewValue:  successRate,
+				Cause:     cause,
+			},
+		},
+	}
+	s.EmitTelemetryEvent(event)
+
+	if success {
+		log.Printf("[Telemetry] CLEANSING SUCCESS: %d participants, %.0f%% rate", len(participantIDs), successRate*100)
+	} else {
+		log.Printf("[Telemetry] CLEANSING FAILED: %d participants, %.0f%% rate", len(participantIDs), successRate*100)
+	}
+}
+
 // EmitInfestationWarning emits a warning-level telemetry event when infestation exceeds 50.
 func (s *telemetryService) EmitInfestationWarning(level float64) {
 	now := time.Now().UTC()

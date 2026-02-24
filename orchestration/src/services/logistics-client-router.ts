@@ -12,6 +12,7 @@
 
 import type { SimulationStatus } from '../../shared/types/simulation';
 import type { NPCState } from '../../shared/types/npc';
+import type { CleansingResult } from '../../shared/types/cleansing';
 import type {
   ILogisticsClient,
   RebellionProbabilityResponse,
@@ -85,6 +86,13 @@ export class LogisticsClientRouter implements ILogisticsClient {
     return this.routeCall(() =>
       this.grpcClient ? this.grpcClient.advanceSimulation() : Promise.reject(new Error('no grpc')),
       () => this.httpClient.advanceSimulation(),
+    );
+  }
+
+  async deployCleansingOperation(npcIds?: string[]): Promise<CleansingResult> {
+    return this.routeCall(() =>
+      this.grpcClient ? this.grpcClient.deployCleansingOperation(npcIds) : Promise.reject(new Error('no grpc')),
+      () => this.httpClient.deployCleansingOperation(npcIds),
     );
   }
 

@@ -38,6 +38,11 @@ jest.mock('@grpc/grpc-js', () => {
     close: mockClose,
   }));
 
+  const MockCleansingServiceClient = jest.fn().mockImplementation(() => ({
+    deployCleansingOperation: jest.fn(),
+    close: mockClose,
+  }));
+
   return {
     ...actual,
     credentials: {
@@ -54,6 +59,9 @@ jest.mock('@grpc/grpc-js', () => {
       }
       if (serviceName === 'epoch.TelemetryService') {
         return MockTelemetryServiceClient;
+      }
+      if (serviceName === 'epoch.CleansingService') {
+        return MockCleansingServiceClient;
       }
       return jest.fn();
     }),
