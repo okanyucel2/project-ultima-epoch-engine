@@ -29,6 +29,15 @@ message SimulationStatus {
   int32 active_npcs = 5;
   int64 tick_count = 6;
   epoch.common.EpochTimestamp last_tick = 7;
+  InfestationStatus infestation = 8;
+}
+
+// Plague Heart infestation state — sustained rebellion + trauma creates system debt
+message InfestationStatus {
+  double counter = 1;              // 0-100: infestation level
+  bool is_plague_heart = 2;        // true when counter >= 100
+  double throttle_multiplier = 3;  // 1.0 normal, 0.50 when plague heart active
+  int64 last_update_tick = 4;      // tick when last updated
 }
 
 // Refinery — converts Mineral into Rapidlum

@@ -25,6 +25,9 @@ type SimulationStatus struct {
 	OverallRebellionProb float64
 	ActiveNPCs           int
 	TickCount            int64
+	InfestationLevel     float64 // 0-100: current infestation counter
+	IsPlagueHeart        bool    // true when Plague Heart active
+	ThrottleMultiplier   float64 // production multiplier (1.0 normal, 0.50 plague heart)
 }
 
 // Mine represents a mineral extraction facility.

@@ -75,6 +75,9 @@ func main() {
 			"overall_rebellion_prob":   status.OverallRebellionProb,
 			"active_npcs":             status.ActiveNPCs,
 			"tick_count":              status.TickCount,
+			"infestation_level":       status.InfestationLevel,
+			"is_plague_heart":         status.IsPlagueHeart,
+			"throttle_multiplier":     status.ThrottleMultiplier,
 		})
 	})
 

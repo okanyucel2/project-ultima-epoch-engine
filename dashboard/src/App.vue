@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useEpochWebSocket } from './composables/useEpochWebSocket';
 import StatusBadge from './components/StatusBadge.vue';
+import AEGISVetoOverlay from './components/AEGISVetoOverlay.vue';
 
 const route = useRoute();
 const { connected } = useEpochWebSocket(['npc-events', 'rebellion-alerts', 'system-status']);
@@ -68,6 +69,9 @@ function isActive(path: string): boolean {
         <router-view />
       </div>
     </main>
+
+    <!-- Global AEGIS Veto Overlay -->
+    <AEGISVetoOverlay />
   </div>
 </template>
 

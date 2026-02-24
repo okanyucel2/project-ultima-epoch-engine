@@ -89,6 +89,12 @@ func convertSimulationStatus(s simulation.SimulationStatus) *pb.SimulationStatus
 			Iso8601: now.Format(time.RFC3339),
 			UnixMs:  now.UnixMilli(),
 		},
+		Infestation: &pb.InfestationStatus{
+			Counter:            s.InfestationLevel,
+			IsPlagueHeart:      s.IsPlagueHeart,
+			ThrottleMultiplier: s.ThrottleMultiplier,
+			LastUpdateTick:     s.TickCount,
+		},
 	}
 }
 

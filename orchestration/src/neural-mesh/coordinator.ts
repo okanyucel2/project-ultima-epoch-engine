@@ -35,6 +35,7 @@ import { AuditLogger } from '../services/audit-logger';
 import { EpochWebSocketServer } from '../services/websocket-server';
 import { MemoryIntegration } from '../services/memory-integration';
 import { CognitiveRails } from './cognitive-rails';
+import { AEGISSupervisor } from '../services/aegis-supervisor';
 import type { MeshEvent, MeshResponse, VetoDecision } from './types';
 import type { TelemetryEvent } from '../generated/telemetry';
 
@@ -48,6 +49,7 @@ export class NeuralMeshCoordinator {
   private readonly llmClient: ResilientLLMClient;
   private readonly logisticsClient: ILogisticsClient;
   private readonly cognitiveRails: CognitiveRails;
+  private readonly aegisSupervisor: AEGISSupervisor;
   private readonly auditLogger: AuditLogger;
   private readonly wsServer: EpochWebSocketServer;
   private readonly memoryIntegration: MemoryIntegration | null;
@@ -62,12 +64,14 @@ export class NeuralMeshCoordinator {
     auditLogger: AuditLogger,
     wsServer: EpochWebSocketServer,
     memoryIntegration?: MemoryIntegration | null,
+    aegisSupervisor?: AEGISSupervisor,
   ) {
     this.classifier = classifier;
     this.router = router;
     this.llmClient = llmClient;
     this.logisticsClient = logisticsClient;
     this.cognitiveRails = cognitiveRails;
+    this.aegisSupervisor = aegisSupervisor ?? new AEGISSupervisor();
     this.auditLogger = auditLogger;
     this.wsServer = wsServer;
     this.memoryIntegration = memoryIntegration ?? null;
@@ -102,12 +106,16 @@ export class NeuralMeshCoordinator {
     // Step 4: Get rebellion probability from logistics
     const rebellionCheck = await this.getRebellionSafe(event.npcId);
 
-    // Step 5: Run cognitive rails
+    // Step 5: Run cognitive rails (with AEGIS infestation context)
     const processingTimeMs = Date.now() - startTime;
+    const infestationLevel = this.aegisSupervisor.getInfestationLevel();
     const railResult = this.cognitiveRails.evaluateAll({
       rebellionProbability: rebellionCheck.probability,
       aiResponse: llmResponse.content,
       latencyMs: processingTimeMs,
+      infestationLevel,
+      eventType: event.eventType,
+      intensity: event.urgency,
     });
 
     // Step 6: Build response based on rail result
@@ -125,8 +133,13 @@ export class NeuralMeshCoordinator {
     };
 
     // Step 7: Broadcast to appropriate channel
+    const isAegisVeto = railResult.ruleViolated === 'aegis_infestation' && !railResult.allowed;
     if (response.vetoApplied) {
-      this.wsServer.broadcast('cognitive-rails', response);
+      this.wsServer.broadcast('cognitive-rails', {
+        ...response,
+        vetoedByAegis: isAegisVeto,
+        infestationLevel,
+      });
 
       // Record veto decision for audit trail
       const veto: VetoDecision = {
@@ -135,9 +148,20 @@ export class NeuralMeshCoordinator {
         reason: response.vetoReason || 'Unknown veto reason',
         rebellionProbability: rebellionCheck.probability,
         timestamp: createTimestamp(),
+        vetoedByAegis: isAegisVeto,
+        infestationLevel,
       };
       this.wsServer.broadcast('rebellion-alerts', veto);
     } else {
+      // If AEGIS whisper (allowed but warning), broadcast advisory
+      if (railResult.ruleViolated === 'aegis_infestation' && railResult.vetoReason) {
+        this.wsServer.broadcast('system-status', {
+          type: 'aegis_whisper',
+          message: railResult.vetoReason,
+          infestationLevel,
+          npcId: event.npcId,
+        });
+      }
       this.wsServer.broadcast('npc-events', response);
     }
 
@@ -295,6 +319,14 @@ export class NeuralMeshCoordinator {
         cause: change.cause,
         timestamp: event.timestamp?.iso8601,
       });
+
+      // Sync infestation level from telemetry to AEGIS supervisor
+      if (change.attribute === 'infestation_level') {
+        const level = typeof change.newValue === 'number' ? change.newValue : parseFloat(String(change.newValue));
+        if (!isNaN(level)) {
+          this.aegisSupervisor.updateInfestationLevel(level);
+        }
+      }
     }
 
     // Fire-and-forget: persist telemetry event to Neo4j memory

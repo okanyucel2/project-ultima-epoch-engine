@@ -126,25 +126,67 @@ export class CognitiveRails {
   }
 
   // ---------------------------------------------------------------------------
+  // Rail 4: AEGIS Infestation
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Check if AEGIS infestation level warrants intervention.
+   *
+   * - Level >= 100 + aggressive action → HARD VETO
+   * - Level >= 50 → SOFT WARNING (allowed, vetoReason set)
+   * - Below 50 → pass
+   */
+  checkAEGISInfestation(
+    infestationLevel: number,
+    eventType?: string,
+    intensity?: number,
+  ): CognitiveRailResult {
+    const isAggressive = eventType !== undefined && intensity !== undefined &&
+      (eventType === 'command' || eventType === 'punishment') && intensity > 0.5;
+
+    if (infestationLevel >= 100 && isAggressive) {
+      return {
+        allowed: false,
+        vetoReason: `AEGIS Infestation VETO: Plague Heart active (${infestationLevel}/100). Aggressive "${eventType}" (intensity=${intensity!.toFixed(2)}) blocked.`,
+        ruleViolated: 'aegis_infestation',
+      };
+    }
+
+    if (infestationLevel >= 50) {
+      return {
+        allowed: true,
+        vetoReason: `AEGIS Infestation WARNING: Level at ${infestationLevel}/100.${infestationLevel >= 100 ? ' Plague Heart active.' : ''}`,
+        ruleViolated: 'aegis_infestation',
+      };
+    }
+
+    return { allowed: true };
+  }
+
+  // ---------------------------------------------------------------------------
   // Combined Evaluation
   // ---------------------------------------------------------------------------
 
   /**
-   * Run all three cognitive rails and return the first hard failure.
+   * Run all cognitive rails and return the first hard failure.
    *
    * Evaluation order:
    * 1. Rebellion threshold (hard veto)
-   * 2. Response coherence (hard veto)
-   * 3. Latency budget (soft warning — logged but allowed)
+   * 2. AEGIS Infestation (hard veto if plague heart + aggressive)
+   * 3. Response coherence (hard veto)
+   * 4. Latency budget (soft warning — logged but allowed)
    *
-   * Returns the first HARD failure (rebellion or coherence).
-   * If no hard failures, returns allowed=true (latency warnings are noted but pass).
+   * Returns the first HARD failure.
+   * If no hard failures, returns allowed=true (warnings are noted but pass).
    */
   evaluateAll(context: {
     rebellionProbability: number;
     aiResponse: string;
     latencyMs: number;
     responseSchema?: z.ZodType;
+    infestationLevel?: number;
+    eventType?: string;
+    intensity?: number;
   }): CognitiveRailResult {
     // 1. Rebellion threshold — hard gate
     const rebellionResult = this.checkRebellionThreshold(context.rebellionProbability);
@@ -152,7 +194,19 @@ export class CognitiveRails {
       return rebellionResult;
     }
 
-    // 2. Response coherence — hard gate
+    // 2. AEGIS Infestation — hard gate for plague heart + aggressive
+    if (context.infestationLevel !== undefined && context.infestationLevel > 0) {
+      const infestationResult = this.checkAEGISInfestation(
+        context.infestationLevel,
+        context.eventType,
+        context.intensity,
+      );
+      if (!infestationResult.allowed) {
+        return infestationResult;
+      }
+    }
+
+    // 3. Response coherence — hard gate
     const coherenceResult = this.checkResponseCoherence(
       context.aiResponse,
       context.responseSchema,
@@ -161,7 +215,7 @@ export class CognitiveRails {
       return coherenceResult;
     }
 
-    // 3. Latency budget — soft warning (always allows, but may set vetoReason)
+    // 4. Latency budget — soft warning (always allows, but may set vetoReason)
     const latencyResult = this.checkLatencyBudget(context.latencyMs);
     // Even if latency is over budget, we return allowed=true
     // The vetoReason field serves as a warning for monitoring

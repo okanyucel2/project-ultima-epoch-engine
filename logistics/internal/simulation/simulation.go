@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/infestation"
 	"github.com/okanyucel2/project-ultima-epoch-engine/logistics/internal/rebellion"
 )
 
@@ -23,17 +24,19 @@ const (
 // SimulationEngine manages the resource simulation, including mines, refineries,
 // and resource production/consumption per tick. It is safe for concurrent use.
 type SimulationEngine struct {
-	status     SimulationStatus
-	mines      []Mine
-	refineries []Refinery
-	mu         sync.RWMutex
-	rebellion  *rebellion.Engine
-	nextID     int
+	status      SimulationStatus
+	mines       []Mine
+	refineries  []Refinery
+	mu          sync.RWMutex
+	rebellion   *rebellion.Engine
+	infestation *infestation.Engine
+	nextID      int
 }
 
 // NewSimulationEngine creates a new simulation engine initialized with zero resources
 // and the given rebellion engine for probability calculations.
 func NewSimulationEngine(rebellionEngine *rebellion.Engine) *SimulationEngine {
+	infestationEngine := infestation.NewEngine(infestation.DefaultConfig())
 	return &SimulationEngine{
 		status: SimulationStatus{
 			Refineries:           0,
@@ -41,6 +44,7 @@ func NewSimulationEngine(rebellionEngine *rebellion.Engine) *SimulationEngine {
 			ActiveNPCs:           0,
 			TickCount:            0,
 			OverallRebellionProb: 0.0,
+			ThrottleMultiplier:   1.0,
 			Resources: map[ResourceType]*ResourceState{
 				ResourceSim: {
 					Type:            ResourceSim,
@@ -62,10 +66,11 @@ func NewSimulationEngine(rebellionEngine *rebellion.Engine) *SimulationEngine {
 				},
 			},
 		},
-		mines:      make([]Mine, 0),
-		refineries: make([]Refinery, 0),
-		rebellion:  rebellionEngine,
-		nextID:     1,
+		mines:       make([]Mine, 0),
+		refineries:  make([]Refinery, 0),
+		rebellion:   rebellionEngine,
+		infestation: infestationEngine,
+		nextID:      1,
 	}
 }
 
@@ -99,9 +104,24 @@ func (s *SimulationEngine) Tick() SimulationStatus {
 	s.status.Resources[ResourceRapidlum].ProductionRate = totalRapidlumProduction
 	s.status.Resources[ResourceSim].ProductionRate = baseSimProduction
 
-	// Apply production
+	// Tick infestation engine (uses average rebellion + simulated avg trauma)
+	avgTrauma := 1.0 - s.status.OverallRebellionProb // approximate: low rebellion ≈ low trauma
+	if s.infestation != nil {
+		infResult := s.infestation.Tick(s.status.OverallRebellionProb, avgTrauma, s.status.TickCount+1)
+		infState := s.infestation.GetState()
+		s.status.InfestationLevel = infState.Counter
+		s.status.IsPlagueHeart = infState.IsPlagueHeart
+		s.status.ThrottleMultiplier = infState.ThrottleMultiplier
+		_ = infResult // result used for telemetry by caller
+	}
+
+	// Apply production (throttled by infestation)
+	throttle := s.status.ThrottleMultiplier
+	if throttle <= 0 {
+		throttle = 1.0
+	}
 	for _, res := range s.status.Resources {
-		res.Quantity += res.ProductionRate
+		res.Quantity += res.ProductionRate * throttle
 	}
 
 	// Apply consumption (mineral consumed by refineries)
@@ -173,6 +193,16 @@ func (s *SimulationEngine) AddRefinery(efficiency float64) string {
 	return id
 }
 
+// GetInfestationState returns the current infestation state.
+func (s *SimulationEngine) GetInfestationState() infestation.InfestationState {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if s.infestation == nil {
+		return infestation.InfestationState{ThrottleMultiplier: 1.0}
+	}
+	return s.infestation.GetState()
+}
+
 // copyStatus creates a deep copy of the current simulation status.
 func (s *SimulationEngine) copyStatus() SimulationStatus {
 	resources := make(map[ResourceType]*ResourceState, len(s.status.Resources))
@@ -188,5 +218,8 @@ func (s *SimulationEngine) copyStatus() SimulationStatus {
 		OverallRebellionProb: s.status.OverallRebellionProb,
 		ActiveNPCs:           s.status.ActiveNPCs,
 		TickCount:            s.status.TickCount,
+		InfestationLevel:     s.status.InfestationLevel,
+		IsPlagueHeart:        s.status.IsPlagueHeart,
+		ThrottleMultiplier:   s.status.ThrottleMultiplier,
 	}
 }

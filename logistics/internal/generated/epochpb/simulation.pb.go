@@ -151,6 +151,7 @@ type SimulationStatus struct {
 	ActiveNpcs                  int32                  `protobuf:"varint,5,opt,name=active_npcs,json=activeNpcs,proto3" json:"active_npcs,omitempty"`
 	TickCount                   int64                  `protobuf:"varint,6,opt,name=tick_count,json=tickCount,proto3" json:"tick_count,omitempty"`
 	LastTick                    *EpochTimestamp        `protobuf:"bytes,7,opt,name=last_tick,json=lastTick,proto3" json:"last_tick,omitempty"`
+	Infestation                 *InfestationStatus     `protobuf:"bytes,8,opt,name=infestation,proto3" json:"infestation,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -234,6 +235,82 @@ func (x *SimulationStatus) GetLastTick() *EpochTimestamp {
 	return nil
 }
 
+func (x *SimulationStatus) GetInfestation() *InfestationStatus {
+	if x != nil {
+		return x.Infestation
+	}
+	return nil
+}
+
+// Plague Heart infestation state — sustained rebellion + trauma creates system debt
+type InfestationStatus struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	Counter            float64                `protobuf:"fixed64,1,opt,name=counter,proto3" json:"counter,omitempty"`                                                 // 0-100: infestation level
+	IsPlagueHeart      bool                   `protobuf:"varint,2,opt,name=is_plague_heart,json=isPlagueHeart,proto3" json:"is_plague_heart,omitempty"`               // true when counter >= 100
+	ThrottleMultiplier float64                `protobuf:"fixed64,3,opt,name=throttle_multiplier,json=throttleMultiplier,proto3" json:"throttle_multiplier,omitempty"` // 1.0 normal, 0.50 when plague heart active
+	LastUpdateTick     int64                  `protobuf:"varint,4,opt,name=last_update_tick,json=lastUpdateTick,proto3" json:"last_update_tick,omitempty"`            // tick when last updated
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *InfestationStatus) Reset() {
+	*x = InfestationStatus{}
+	mi := &file_simulation_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InfestationStatus) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InfestationStatus) ProtoMessage() {}
+
+func (x *InfestationStatus) ProtoReflect() protoreflect.Message {
+	mi := &file_simulation_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InfestationStatus.ProtoReflect.Descriptor instead.
+func (*InfestationStatus) Descriptor() ([]byte, []int) {
+	return file_simulation_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *InfestationStatus) GetCounter() float64 {
+	if x != nil {
+		return x.Counter
+	}
+	return 0
+}
+
+func (x *InfestationStatus) GetIsPlagueHeart() bool {
+	if x != nil {
+		return x.IsPlagueHeart
+	}
+	return false
+}
+
+func (x *InfestationStatus) GetThrottleMultiplier() float64 {
+	if x != nil {
+		return x.ThrottleMultiplier
+	}
+	return 0
+}
+
+func (x *InfestationStatus) GetLastUpdateTick() int64 {
+	if x != nil {
+		return x.LastUpdateTick
+	}
+	return 0
+}
+
 // Refinery — converts Mineral into Rapidlum
 type Refinery struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
@@ -249,7 +326,7 @@ type Refinery struct {
 
 func (x *Refinery) Reset() {
 	*x = Refinery{}
-	mi := &file_simulation_proto_msgTypes[2]
+	mi := &file_simulation_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -261,7 +338,7 @@ func (x *Refinery) String() string {
 func (*Refinery) ProtoMessage() {}
 
 func (x *Refinery) ProtoReflect() protoreflect.Message {
-	mi := &file_simulation_proto_msgTypes[2]
+	mi := &file_simulation_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -274,7 +351,7 @@ func (x *Refinery) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Refinery.ProtoReflect.Descriptor instead.
 func (*Refinery) Descriptor() ([]byte, []int) {
-	return file_simulation_proto_rawDescGZIP(), []int{2}
+	return file_simulation_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *Refinery) GetRefineryId() string {
@@ -333,7 +410,7 @@ type Mine struct {
 
 func (x *Mine) Reset() {
 	*x = Mine{}
-	mi := &file_simulation_proto_msgTypes[3]
+	mi := &file_simulation_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -345,7 +422,7 @@ func (x *Mine) String() string {
 func (*Mine) ProtoMessage() {}
 
 func (x *Mine) ProtoReflect() protoreflect.Message {
-	mi := &file_simulation_proto_msgTypes[3]
+	mi := &file_simulation_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -358,7 +435,7 @@ func (x *Mine) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Mine.ProtoReflect.Descriptor instead.
 func (*Mine) Descriptor() ([]byte, []int) {
-	return file_simulation_proto_rawDescGZIP(), []int{3}
+	return file_simulation_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *Mine) GetMineId() string {
@@ -405,7 +482,7 @@ const file_simulation_proto_rawDesc = "" +
 	"\x04type\x18\x01 \x01(\x0e2\x1e.epoch.simulation.ResourceTypeR\x04type\x12\x1a\n" +
 	"\bquantity\x18\x02 \x01(\x01R\bquantity\x12'\n" +
 	"\x0fproduction_rate\x18\x03 \x01(\x01R\x0eproductionRate\x12)\n" +
-	"\x10consumption_rate\x18\x04 \x01(\x01R\x0fconsumptionRate\"\xc6\x02\n" +
+	"\x10consumption_rate\x18\x04 \x01(\x01R\x0fconsumptionRate\"\x8d\x03\n" +
 	"\x10SimulationStatus\x12\x1e\n" +
 	"\n" +
 	"refineries\x18\x01 \x01(\x05R\n" +
@@ -417,7 +494,13 @@ const file_simulation_proto_rawDesc = "" +
 	"activeNpcs\x12\x1d\n" +
 	"\n" +
 	"tick_count\x18\x06 \x01(\x03R\ttickCount\x129\n" +
-	"\tlast_tick\x18\a \x01(\v2\x1c.epoch.common.EpochTimestampR\blastTick\"\xf2\x01\n" +
+	"\tlast_tick\x18\a \x01(\v2\x1c.epoch.common.EpochTimestampR\blastTick\x12E\n" +
+	"\vinfestation\x18\b \x01(\v2#.epoch.simulation.InfestationStatusR\vinfestation\"\xb0\x01\n" +
+	"\x11InfestationStatus\x12\x18\n" +
+	"\acounter\x18\x01 \x01(\x01R\acounter\x12&\n" +
+	"\x0fis_plague_heart\x18\x02 \x01(\bR\risPlagueHeart\x12/\n" +
+	"\x13throttle_multiplier\x18\x03 \x01(\x01R\x12throttleMultiplier\x12(\n" +
+	"\x10last_update_tick\x18\x04 \x01(\x03R\x0elastUpdateTick\"\xf2\x01\n" +
 	"\bRefinery\x12\x1f\n" +
 	"\vrefinery_id\x18\x01 \x01(\tR\n" +
 	"refineryId\x12\x1e\n" +
@@ -454,24 +537,26 @@ func file_simulation_proto_rawDescGZIP() []byte {
 }
 
 var file_simulation_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_simulation_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_simulation_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_simulation_proto_goTypes = []any{
-	(ResourceType)(0),        // 0: epoch.simulation.ResourceType
-	(*ResourceState)(nil),    // 1: epoch.simulation.ResourceState
-	(*SimulationStatus)(nil), // 2: epoch.simulation.SimulationStatus
-	(*Refinery)(nil),         // 3: epoch.simulation.Refinery
-	(*Mine)(nil),             // 4: epoch.simulation.Mine
-	(*EpochTimestamp)(nil),   // 5: epoch.common.EpochTimestamp
+	(ResourceType)(0),         // 0: epoch.simulation.ResourceType
+	(*ResourceState)(nil),     // 1: epoch.simulation.ResourceState
+	(*SimulationStatus)(nil),  // 2: epoch.simulation.SimulationStatus
+	(*InfestationStatus)(nil), // 3: epoch.simulation.InfestationStatus
+	(*Refinery)(nil),          // 4: epoch.simulation.Refinery
+	(*Mine)(nil),              // 5: epoch.simulation.Mine
+	(*EpochTimestamp)(nil),    // 6: epoch.common.EpochTimestamp
 }
 var file_simulation_proto_depIdxs = []int32{
 	0, // 0: epoch.simulation.ResourceState.type:type_name -> epoch.simulation.ResourceType
 	1, // 1: epoch.simulation.SimulationStatus.resources:type_name -> epoch.simulation.ResourceState
-	5, // 2: epoch.simulation.SimulationStatus.last_tick:type_name -> epoch.common.EpochTimestamp
-	3, // [3:3] is the sub-list for method output_type
-	3, // [3:3] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	6, // 2: epoch.simulation.SimulationStatus.last_tick:type_name -> epoch.common.EpochTimestamp
+	3, // 3: epoch.simulation.SimulationStatus.infestation:type_name -> epoch.simulation.InfestationStatus
+	4, // [4:4] is the sub-list for method output_type
+	4, // [4:4] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_simulation_proto_init() }
@@ -486,7 +571,7 @@ func file_simulation_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_simulation_proto_rawDesc), len(file_simulation_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   4,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

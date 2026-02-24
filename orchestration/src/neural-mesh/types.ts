@@ -76,4 +76,8 @@ export interface VetoDecision {
   rebellionProbability: number;
   /** When the veto occurred */
   timestamp: EpochTimestamp;
+  /** Whether this veto was issued by AEGIS infestation rail */
+  vetoedByAegis?: boolean;
+  /** Infestation level at time of veto */
+  infestationLevel?: number;
 }

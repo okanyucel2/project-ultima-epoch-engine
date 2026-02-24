@@ -358,6 +358,8 @@ export class LogisticsGrpcClient implements ILogisticsClient {
       };
     }
 
+    const infestation = proto.infestation;
+
     return {
       refineries: proto.refineries,
       mines: proto.mines,
@@ -370,6 +372,12 @@ export class LogisticsGrpcClient implements ILogisticsClient {
       overallRebellionProbability: proto.overallRebellionProbability,
       activeNpcs: proto.activeNpcs,
       tickCount: proto.tickCount,
+      infestation: infestation ? {
+        counter: infestation.counter ?? 0,
+        isPlagueHeart: infestation.isPlagueHeart ?? false,
+        throttleMultiplier: infestation.throttleMultiplier ?? 1.0,
+        lastUpdateTick: infestation.lastUpdateTick ?? 0,
+      } : undefined,
     };
   }
 

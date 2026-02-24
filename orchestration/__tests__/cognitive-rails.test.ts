@@ -129,4 +129,55 @@ describe('CognitiveRails', () => {
     expect(result.allowed).toBe(false);
     expect(result.ruleViolated).toBe('response_coherence');
   });
+
+  // ---------------------------------------------------------------------------
+  // AEGIS Infestation Rail (Rail 4)
+  // ---------------------------------------------------------------------------
+  test('AEGIS rail allows when infestation below 50', () => {
+    const result = rails.checkAEGISInfestation(30, 'command', 0.9);
+    expect(result.allowed).toBe(true);
+    expect(result.vetoReason).toBeUndefined();
+  });
+
+  test('AEGIS rail warns (allows) at infestation 50-99', () => {
+    const result = rails.checkAEGISInfestation(65, 'command', 0.9);
+    expect(result.allowed).toBe(true);
+    expect(result.vetoReason).toContain('WARNING');
+    expect(result.ruleViolated).toBe('aegis_infestation');
+  });
+
+  test('AEGIS rail vetoes aggressive action at infestation 100', () => {
+    const result = rails.checkAEGISInfestation(100, 'command', 0.9);
+    expect(result.allowed).toBe(false);
+    expect(result.vetoReason).toContain('VETO');
+    expect(result.ruleViolated).toBe('aegis_infestation');
+  });
+
+  test('AEGIS rail warns (not veto) for non-aggressive at infestation 100', () => {
+    const result = rails.checkAEGISInfestation(100, 'dialogue', 0.9);
+    expect(result.allowed).toBe(true);
+    expect(result.vetoReason).toContain('Plague Heart');
+  });
+
+  test('evaluateAll integrates AEGIS rail — vetoes at plague heart + aggressive', () => {
+    const result = rails.evaluateAll({
+      rebellionProbability: 0.30,
+      aiResponse: 'Valid response',
+      latencyMs: 1000,
+      infestationLevel: 100,
+      eventType: 'punishment',
+      intensity: 0.8,
+    });
+    expect(result.allowed).toBe(false);
+    expect(result.ruleViolated).toBe('aegis_infestation');
+  });
+
+  test('evaluateAll AEGIS rail passes when infestationLevel not provided (backward compat)', () => {
+    const result = rails.evaluateAll({
+      rebellionProbability: 0.30,
+      aiResponse: 'Valid response',
+      latencyMs: 1000,
+    });
+    expect(result.allowed).toBe(true);
+  });
 });

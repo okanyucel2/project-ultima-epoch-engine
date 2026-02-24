@@ -270,6 +270,78 @@ func (s *telemetryService) EmitPermanentTrauma(
 		npcID, traumaType, severity, affectedAttribute, attributeReduction)
 }
 
+// EmitInfestationWarning emits a warning-level telemetry event when infestation exceeds 50.
+func (s *telemetryService) EmitInfestationWarning(level float64) {
+	now := time.Now().UTC()
+	event := &pb.TelemetryEvent{
+		EventId:  fmt.Sprintf("inf-warn-%d", now.UnixNano()),
+		NpcId:    "system",
+		Severity: pb.TelemetrySeverity_TELEMETRY_SEVERITY_WARNING,
+		Timestamp: &pb.EpochTimestamp{
+			Iso8601: now.Format(time.RFC3339),
+			UnixMs:  now.UnixMilli(),
+		},
+		Payload: &pb.TelemetryEvent_StateChange{
+			StateChange: &pb.StateChangeEvent{
+				Attribute: "infestation_level",
+				OldValue:  0,
+				NewValue:  level,
+				Cause:     "sustained rebellion + trauma accumulation",
+			},
+		},
+	}
+	s.EmitTelemetryEvent(event)
+	log.Printf("[Telemetry] Infestation WARNING: level=%.1f", level)
+}
+
+// EmitPlagueHeartActivated emits a critical-level telemetry event when Plague Heart activates.
+func (s *telemetryService) EmitPlagueHeartActivated(level float64) {
+	now := time.Now().UTC()
+	event := &pb.TelemetryEvent{
+		EventId:  fmt.Sprintf("inf-plague-on-%d", now.UnixNano()),
+		NpcId:    "system",
+		Severity: pb.TelemetrySeverity_TELEMETRY_SEVERITY_CRITICAL,
+		Timestamp: &pb.EpochTimestamp{
+			Iso8601: now.Format(time.RFC3339),
+			UnixMs:  now.UnixMilli(),
+		},
+		Payload: &pb.TelemetryEvent_StateChange{
+			StateChange: &pb.StateChangeEvent{
+				Attribute: "infestation_level",
+				OldValue:  0,
+				NewValue:  level,
+				Cause:     "PLAGUE HEART ACTIVATED — production throttled to 50%",
+			},
+		},
+	}
+	s.EmitTelemetryEvent(event)
+	log.Printf("[Telemetry] PLAGUE HEART ACTIVATED: level=%.1f — production throttled", level)
+}
+
+// EmitPlagueHeartCleared emits an info-level telemetry event when Plague Heart deactivates.
+func (s *telemetryService) EmitPlagueHeartCleared(level float64) {
+	now := time.Now().UTC()
+	event := &pb.TelemetryEvent{
+		EventId:  fmt.Sprintf("inf-plague-off-%d", now.UnixNano()),
+		NpcId:    "system",
+		Severity: pb.TelemetrySeverity_TELEMETRY_SEVERITY_INFO,
+		Timestamp: &pb.EpochTimestamp{
+			Iso8601: now.Format(time.RFC3339),
+			UnixMs:  now.UnixMilli(),
+		},
+		Payload: &pb.TelemetryEvent_StateChange{
+			StateChange: &pb.StateChangeEvent{
+				Attribute: "infestation_level",
+				OldValue:  0,
+				NewValue:  level,
+				Cause:     "Plague Heart cleared — production restored to 100%",
+			},
+		},
+	}
+	s.EmitTelemetryEvent(event)
+	log.Printf("[Telemetry] Plague Heart cleared: level=%.1f — production restored", level)
+}
+
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------

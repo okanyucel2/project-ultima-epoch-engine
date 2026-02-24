@@ -5,6 +5,7 @@ import { useEpochWebSocket, type WebSocketMessage } from '../composables/useEpoc
 import { fetchSystemStatus, type SystemStatus } from '../api/epoch-api';
 import MetricCard from '../components/MetricCard.vue';
 import TelemetryAlertPanel from '../components/TelemetryAlertPanel.vue';
+import InfestationBar from '../components/InfestationBar.vue';
 
 const { sortedNPCs, loading, error, criticalCount, avgRebellion } = useNPCMonitor();
 const { onMessage, offMessage } = useEpochWebSocket(['rebellion-alerts']);
@@ -100,6 +101,9 @@ onUnmounted(() => {
         color="var(--accent-danger)"
       />
     </div>
+
+    <!-- Infestation Bar -->
+    <InfestationBar />
 
     <!-- Loading -->
     <div v-if="loading && sortedNPCs.length === 0" class="state-message">

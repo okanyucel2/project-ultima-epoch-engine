@@ -77,6 +77,19 @@ export interface SimulationStatus {
   activeNpcs: number;
   tickCount: number;
   lastTick?: EpochTimestamp | undefined;
+  infestation?: InfestationStatus | undefined;
+}
+
+/** Plague Heart infestation state — sustained rebellion + trauma creates system debt */
+export interface InfestationStatus {
+  /** 0-100: infestation level */
+  counter: number;
+  /** true when counter >= 100 */
+  isPlagueHeart: boolean;
+  /** 1.0 normal, 0.50 when plague heart active */
+  throttleMultiplier: number;
+  /** tick when last updated */
+  lastUpdateTick: number;
 }
 
 /** Refinery — converts Mineral into Rapidlum */
@@ -214,6 +227,7 @@ function createBaseSimulationStatus(): SimulationStatus {
     activeNpcs: 0,
     tickCount: 0,
     lastTick: undefined,
+    infestation: undefined,
   };
 }
 
@@ -239,6 +253,9 @@ export const SimulationStatus = {
     }
     if (message.lastTick !== undefined) {
       EpochTimestamp.encode(message.lastTick, writer.uint32(58).fork()).ldelim();
+    }
+    if (message.infestation !== undefined) {
+      InfestationStatus.encode(message.infestation, writer.uint32(66).fork()).ldelim();
     }
     return writer;
   },
@@ -299,6 +316,13 @@ export const SimulationStatus = {
 
           message.lastTick = EpochTimestamp.decode(reader, reader.uint32());
           continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.infestation = InfestationStatus.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -321,6 +345,7 @@ export const SimulationStatus = {
       activeNpcs: isSet(object.activeNpcs) ? globalThis.Number(object.activeNpcs) : 0,
       tickCount: isSet(object.tickCount) ? globalThis.Number(object.tickCount) : 0,
       lastTick: isSet(object.lastTick) ? EpochTimestamp.fromJSON(object.lastTick) : undefined,
+      infestation: isSet(object.infestation) ? InfestationStatus.fromJSON(object.infestation) : undefined,
     };
   },
 
@@ -347,6 +372,9 @@ export const SimulationStatus = {
     if (message.lastTick !== undefined) {
       obj.lastTick = EpochTimestamp.toJSON(message.lastTick);
     }
+    if (message.infestation !== undefined) {
+      obj.infestation = InfestationStatus.toJSON(message.infestation);
+    }
     return obj;
   },
 
@@ -364,6 +392,113 @@ export const SimulationStatus = {
     message.lastTick = (object.lastTick !== undefined && object.lastTick !== null)
       ? EpochTimestamp.fromPartial(object.lastTick)
       : undefined;
+    message.infestation = (object.infestation !== undefined && object.infestation !== null)
+      ? InfestationStatus.fromPartial(object.infestation)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseInfestationStatus(): InfestationStatus {
+  return { counter: 0, isPlagueHeart: false, throttleMultiplier: 0, lastUpdateTick: 0 };
+}
+
+export const InfestationStatus = {
+  encode(message: InfestationStatus, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.counter !== 0) {
+      writer.uint32(9).double(message.counter);
+    }
+    if (message.isPlagueHeart !== false) {
+      writer.uint32(16).bool(message.isPlagueHeart);
+    }
+    if (message.throttleMultiplier !== 0) {
+      writer.uint32(25).double(message.throttleMultiplier);
+    }
+    if (message.lastUpdateTick !== 0) {
+      writer.uint32(32).int64(message.lastUpdateTick);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): InfestationStatus {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseInfestationStatus();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 9) {
+            break;
+          }
+
+          message.counter = reader.double();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.isPlagueHeart = reader.bool();
+          continue;
+        case 3:
+          if (tag !== 25) {
+            break;
+          }
+
+          message.throttleMultiplier = reader.double();
+          continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.lastUpdateTick = longToNumber(reader.int64() as Long);
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): InfestationStatus {
+    return {
+      counter: isSet(object.counter) ? globalThis.Number(object.counter) : 0,
+      isPlagueHeart: isSet(object.isPlagueHeart) ? globalThis.Boolean(object.isPlagueHeart) : false,
+      throttleMultiplier: isSet(object.throttleMultiplier) ? globalThis.Number(object.throttleMultiplier) : 0,
+      lastUpdateTick: isSet(object.lastUpdateTick) ? globalThis.Number(object.lastUpdateTick) : 0,
+    };
+  },
+
+  toJSON(message: InfestationStatus): unknown {
+    const obj: any = {};
+    if (message.counter !== 0) {
+      obj.counter = message.counter;
+    }
+    if (message.isPlagueHeart !== false) {
+      obj.isPlagueHeart = message.isPlagueHeart;
+    }
+    if (message.throttleMultiplier !== 0) {
+      obj.throttleMultiplier = message.throttleMultiplier;
+    }
+    if (message.lastUpdateTick !== 0) {
+      obj.lastUpdateTick = Math.round(message.lastUpdateTick);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<InfestationStatus>, I>>(base?: I): InfestationStatus {
+    return InfestationStatus.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<InfestationStatus>, I>>(object: I): InfestationStatus {
+    const message = createBaseInfestationStatus();
+    message.counter = object.counter ?? 0;
+    message.isPlagueHeart = object.isPlagueHeart ?? false;
+    message.throttleMultiplier = object.throttleMultiplier ?? 0;
+    message.lastUpdateTick = object.lastUpdateTick ?? 0;
     return message;
   },
 };

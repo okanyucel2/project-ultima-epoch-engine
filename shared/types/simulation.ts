@@ -32,6 +32,12 @@ export const SimulationStatusSchema = z.object({
   activeNpcs: z.number().int().min(0),
   tickCount: z.number().int().min(0),
   lastTick: EpochTimestampSchema.optional(),
+  infestation: z.object({
+    counter: z.number().min(0).max(100),
+    isPlagueHeart: z.boolean(),
+    throttleMultiplier: z.number().min(0).max(1),
+    lastUpdateTick: z.number().int().min(0),
+  }).optional(),
 });
 
 export type SimulationStatus = z.infer<typeof SimulationStatusSchema>;
@@ -60,6 +66,23 @@ export const MineSchema = z.object({
 });
 
 export type Mine = z.infer<typeof MineSchema>;
+
+// =============================================================================
+// INFESTATION (PLAGUE HEART)
+// =============================================================================
+
+export interface InfestationStatus {
+  counter: number;           // 0-100: infestation level
+  isPlagueHeart: boolean;    // true when counter >= 100
+  throttleMultiplier: number; // 1.0 normal, 0.50 when plague heart active
+  lastUpdateTick: number;    // tick when last updated
+}
+
+export const INFESTATION_THRESHOLDS = {
+  WARNING: 50,   // AEGIS whisper advisory begins
+  CRITICAL: 75,  // Hysteresis clear threshold
+  PLAGUE_HEART: 100, // Full plague heart activation
+} as const;
 
 // =============================================================================
 // SIMULATION CONSTANTS
