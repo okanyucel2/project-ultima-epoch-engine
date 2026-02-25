@@ -9,7 +9,9 @@
     "check": "tsc --noEmit",
     "test": "jest",
     "test:chaos": "bash ../../scripts/chaos_monkey.sh",
-    "test:latency": "npx tsx scripts/ws_latency_tester.ts"
+    "test:latency": "npx tsx scripts/ws_latency_tester.ts",
+    "doomsday": "npx tsx scripts/run-doomsday-pipeline.ts",
+    "doomsday:legacy": "npx tsx scripts/run-doomsday.ts"
   },
   "dependencies": {
     "zod": "^3.22.4",

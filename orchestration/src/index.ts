@@ -40,6 +40,9 @@ import { applyKarmicResolution } from './services/karmic-resolution';
 // Neural Mesh
 import { CognitiveRails } from './neural-mesh/cognitive-rails';
 import { NeuralMeshCoordinator } from './neural-mesh/coordinator';
+import { AEGISSupervisor } from './services/aegis-supervisor';
+import { DoomsdayOrchestrator } from './scenarios/doomsday-orchestrator';
+import type { TimelinePhase } from './scenarios/doomsday-orchestrator';
 import type { MeshEvent } from './neural-mesh/types';
 
 config();
@@ -63,6 +66,7 @@ export interface AppInstance {
   healthAggregator: HealthAggregator;
   logisticsClient: ILogisticsClient;
   grpcClient: LogisticsGrpcClient | null;
+  aegisSupervisor: AEGISSupervisor;
 }
 
 export function createApp(deps: AppDependencies = {}): AppInstance {
@@ -102,6 +106,7 @@ export function createApp(deps: AppDependencies = {}): AppInstance {
 
   // Neural Mesh
   const cognitiveRails = new CognitiveRails();
+  const aegisSupervisor = new AEGISSupervisor();
   const coordinator = new NeuralMeshCoordinator(
     classifier,
     router,
@@ -111,12 +116,13 @@ export function createApp(deps: AppDependencies = {}): AppInstance {
     auditLogger,
     wsServer,
     memoryIntegration,
+    aegisSupervisor,
   );
 
   // Health
   const healthAggregator = new HealthAggregator(logisticsClient, wsServer);
 
-  return { app: createExpressApp(coordinator, auditLogger, healthAggregator, logisticsClient, wsServer, memoryIntegration), coordinator, auditLogger, wsServer, healthAggregator, logisticsClient, grpcClient };
+  return { app: createExpressApp(coordinator, auditLogger, healthAggregator, logisticsClient, wsServer, memoryIntegration, aegisSupervisor), coordinator, auditLogger, wsServer, healthAggregator, logisticsClient, grpcClient, aegisSupervisor };
 }
 
 // =============================================================================
@@ -130,6 +136,7 @@ function createExpressApp(
   logisticsClient?: ILogisticsClient,
   wsServer?: EpochWebSocketServer,
   memoryIntegration?: MemoryIntegration,
+  aegisSupervisor?: AEGISSupervisor,
 ): express.Express {
   const app = express();
   app.use(express.json());
@@ -298,6 +305,45 @@ app.post('/api/telemetry/watchdog', (req, res) => {
     wsServer.broadcast('system-status', payload.data);
   }
   res.json({ received: true });
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/doomsday/trigger — Execute Doomsday through Neural Mesh pipeline (Wave 46A)
+// Zero-Bypass: ALL events pass through EventClassifier → TierRouter → CognitiveRails → AEGIS → Neo4j
+// rebellion-alerts are computed organically, never injected.
+// ---------------------------------------------------------------------------
+app.post('/api/doomsday/trigger', async (req, res) => {
+  if (!wsServer || !aegisSupervisor) {
+    res.status(503).json({ error: 'WebSocket server or AEGIS supervisor not available' });
+    return;
+  }
+
+  try {
+    const timeline = req.body?.timeline as TimelinePhase[] | undefined;
+    if (!timeline || !Array.isArray(timeline) || timeline.length === 0) {
+      res.status(400).json({ error: 'Request body must contain a non-empty "timeline" array of phases' });
+      return;
+    }
+
+    const orchestrator = new DoomsdayOrchestrator(
+      coordinator,
+      aegisSupervisor,
+      wsServer,
+      memoryIntegration,
+    );
+
+    const result = await orchestrator.execute(timeline);
+
+    res.json({
+      status: 'doomsday_complete',
+      ...result,
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Doomsday execution failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
 });
 
 // ---------------------------------------------------------------------------

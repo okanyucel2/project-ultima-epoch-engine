@@ -1,13 +1,15 @@
 #!/usr/bin/env -S npx tsx
 // =============================================================================
-// DOOMSDAY SCENARIO — Wave 24A: Kıyamet Enjeksiyonu
+// [LEGACY] DOOMSDAY SCENARIO — Wave 24A: Kıyamet Enjeksiyonu
 //
-// Injects 3 simultaneous crises into the Epoch Engine pipeline:
-//   1. Büyük Ork Kuşatması (Great Orc Siege) → Captain Bones → rage_episode
-//   2. Prizma Anomalisi (Prism Anomaly)       → Vex           → paranoia_onset
-//   3. Yetersiz Erzak (Starvation)            → Iron          → dissociation
+// ⚠️  DEPRECATED: This script bypasses the Neural Mesh pipeline.
+//     Use run-doomsday-pipeline.ts (Wave 46A) for pipeline-integrated execution.
+//     See: packages/engine-bridge/scripts/run-doomsday-pipeline.ts
 //
-// Usage:
+// Legacy mode: Injects events directly to EpochDispatcher (local exporter only).
+// Does NOT pass through EventClassifier, TierRouter, CognitiveRails, AEGIS, or Neo4j.
+//
+// Usage (legacy only):
 //   npx tsx packages/engine-bridge/scripts/run-doomsday.ts
 // =============================================================================
 
