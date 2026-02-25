@@ -56,6 +56,15 @@ function createMockBackend(): jest.Mocked<IMemoryBackend> {
       probability: 0.35,
       factors: ['Base probability: 5.0%', 'Trauma modifier: +15.0%'],
     }),
+    getDecayedConfidence: jest.fn().mockResolvedValue({
+      npcId: 'npc-001',
+      entityId: 'director',
+      rawConfidence: 0.72,
+      decayedConfidence: 0.72, // Just-updated = minimal decay
+      decayRate: 0.1,
+      hoursElapsed: 0,
+      lastUpdated: createTimestamp(),
+    }),
   };
 }
 
@@ -234,6 +243,8 @@ describe('MemoryIntegration', () => {
       memoryCount: 2,
       lastEvent: createTimestamp(),
     });
+    // Wave 47: No director TRUSTS edge → getDecayedConfidence returns null
+    mockBackend.getDecayedConfidence.mockResolvedValueOnce(null);
 
     const context = await integration.getNPCContext('npc-003');
     expect(context.confidenceInDirector).toBe(0.5); // Default neutral

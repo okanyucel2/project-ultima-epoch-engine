@@ -1,8 +1,8 @@
 import { v4 as uuidv4 } from 'uuid';
 import { DecayStrategy } from '@epoch/shared/memory';
-import type { DecayConfig, NPCProfile } from '@epoch/shared/memory';
+import type { DecayConfig, NPCProfile, DecayedConfidence } from '@epoch/shared/memory';
 import { createTimestamp } from '@epoch/shared/common';
-import { REBELLION_THRESHOLDS } from '@epoch/shared/npc';
+import { ActionType, REBELLION_THRESHOLDS } from '@epoch/shared/npc';
 import { Neo4jConnectionPool } from './graph/connection-pool';
 import { NPCMemoryGraph } from './graph/npc-memory';
 import { ConfidenceManager } from './graph/confidence-edge';
@@ -31,6 +31,16 @@ const DEFAULT_DECAY_CONFIG: DecayConfig = {
   lambda: 0.05,
   linearRate: 0.01,
 };
+
+/** The Director (player) entity ID for TRUSTS edges */
+export const DIRECTOR_ENTITY_ID = 'director';
+
+/** Player action types that should update Director confidence */
+const PLAYER_ACTIONS = new Set<string>(Object.values(ActionType));
+
+function isPlayerAction(action: string): boolean {
+  return PLAYER_ACTIONS.has(action);
+}
 
 export class EpochMemoryService {
   private readonly pool: Neo4jConnectionPool;
@@ -120,6 +130,20 @@ export class EpochMemoryService {
       rawTraumaScore: Math.min(1, Math.max(0, traumaScore)),
       timestamp: now,
     });
+
+    // Wave 47A: Auto-update Director confidence from player actions.
+    // Only update for recognized ActionType values (skip system events).
+    if (isPlayerAction(playerAction)) {
+      const intensity = Math.max(traumaScore, wisdomScore); // Event severity
+      await this.confidenceManager.updateConfidenceFromAction(
+        npcId,
+        DIRECTOR_ENTITY_ID,
+        playerAction as ActionType,
+        intensity,
+      ).catch(() => {
+        // Non-critical: confidence update failure shouldn't block memory recording
+      });
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -173,14 +197,19 @@ export class EpochMemoryService {
   async getRebellionRisk(
     npcId: string,
   ): Promise<{ probability: number; factors: string[] }> {
-    const trauma = await this.traumaScorer.calculateTrauma(npcId);
+    // Parallel: trauma + decayed Director confidence
+    const [trauma, directorConfidence] = await Promise.all([
+      this.traumaScorer.calculateTrauma(npcId),
+      this.confidenceManager.getDecayedConfidence(npcId, DIRECTOR_ENTITY_ID),
+    ]);
+
     const factors: string[] = [];
 
     // Base probability
     const base = 0.05;
     factors.push(`Base probability: ${(base * 100).toFixed(1)}%`);
 
-    // Trauma modifier
+    // Trauma modifier (unchanged)
     const traumaModifier = trauma.currentScore * 0.6;
     if (traumaModifier > 0) {
       factors.push(
@@ -190,8 +219,24 @@ export class EpochMemoryService {
       );
     }
 
-    // Calculate raw probability
-    const probability = Math.min(1, Math.max(0, base + traumaModifier));
+    // Wave 47: Confidence modifier — low trust in Director increases rebellion
+    // (1 - decayedConfidence) * 0.25 → at confidence 0.0: +25%, at 0.5: +12.5%, at 1.0: +0%
+    const decayedConf = directorConfidence?.decayedConfidence ?? 0.5;
+    const confidenceModifier = (1 - decayedConf) * 0.25;
+    if (directorConfidence) {
+      factors.push(
+        `Trust modifier: +${(confidenceModifier * 100).toFixed(1)}% ` +
+        `(Director trust: ${(decayedConf * 100).toFixed(1)}%, ` +
+        `raw: ${(directorConfidence.rawConfidence * 100).toFixed(1)}%, ` +
+        `decay: ${directorConfidence.hoursElapsed.toFixed(1)}h)`,
+      );
+    }
+
+    // Calculate raw probability with all three factors
+    const probability = Math.min(
+      1,
+      Math.max(0, base + traumaModifier + confidenceModifier),
+    );
 
     // Add threshold warnings
     if (probability >= REBELLION_THRESHOLDS.VETO) {
@@ -205,6 +250,21 @@ export class EpochMemoryService {
     }
 
     return { probability, factors };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Wave 47: Decayed Confidence Access
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Get the time-decayed confidence between an NPC and any entity.
+   * Returns null if no TRUSTS edge exists.
+   */
+  async getDecayedConfidence(
+    npcId: string,
+    entityId: string,
+  ): Promise<DecayedConfidence | null> {
+    return this.confidenceManager.getDecayedConfidence(npcId, entityId);
   }
 
   // ---------------------------------------------------------------------------

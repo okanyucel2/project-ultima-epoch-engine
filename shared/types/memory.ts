@@ -83,6 +83,27 @@ export interface TraumaScore {
 }
 
 // =============================================================================
+// DECAYED CONFIDENCE — Trust with hyperbolic time decay (Wave 47)
+//
+// Confidence decays toward NEUTRAL (0.5), not toward zero.
+// High trust (0.9) fades toward 0.5 over time; low trust (0.1) rises toward 0.5.
+// Formula: neutral + (rawConfidence - neutral) * (1 / (1 + decayRate * hours))
+// =============================================================================
+
+export interface DecayedConfidence {
+  npcId: string;
+  entityId: string;
+  rawConfidence: number;         // Stored in Neo4j (last written value)
+  decayedConfidence: number;     // After hyperbolic decay toward neutral
+  decayRate: number;             // Alpha coefficient
+  hoursElapsed: number;          // Since lastUpdated
+  lastUpdated: EpochTimestamp;
+}
+
+/** Neutral point — confidence decays toward this, not toward zero */
+export const CONFIDENCE_NEUTRAL = 0.5;
+
+// =============================================================================
 // NPC PROFILE — Aggregated view from Epoch Memory
 // =============================================================================
 

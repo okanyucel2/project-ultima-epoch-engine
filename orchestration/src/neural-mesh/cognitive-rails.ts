@@ -1,7 +1,7 @@
 // =============================================================================
 // CognitiveRails — AEGIS Cognitive Rails Decision Interceptor
 // =============================================================================
-// Three rail types enforce game-mechanic boundaries on AI creativity:
+// Five rails enforce game-mechanic boundaries on AI creativity:
 //
 // 1. Rebellion Threshold Rail
 //    - VETO if rebellion probability >= 0.80 (REBELLION_THRESHOLDS.VETO)
@@ -14,6 +14,14 @@
 // 3. Latency Budget Rail
 //    - WARNING (no veto) if response time exceeds budget (default 5s)
 //    - Soft constraint — logged for monitoring but doesn't block
+//
+// 4. AEGIS Infestation Rail
+//    - VETO if Plague Heart active + aggressive action
+//    - WARNING if infestation >= 50
+//
+// 5. Trust Erosion Rail (Wave 47)
+//    - WARNING if Director confidence < 0.25 (after hyperbolic decay)
+//    - Modulates rebellion calculation — distrust amplifies uprising
 //
 // Combined `evaluateAll()` runs all rails and returns first violation.
 // =============================================================================
@@ -164,6 +172,49 @@ export class CognitiveRails {
   }
 
   // ---------------------------------------------------------------------------
+  // Rail 5: Trust Erosion (Wave 47)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Check if NPC's confidence in the Director has eroded critically.
+   *
+   * This is a SOFT constraint — it logs a warning when confidence is very low,
+   * signaling that the NPC's distrust may amplify rebellion risk.
+   *
+   * Thresholds:
+   *   - confidence < 0.15 → CRITICAL WARNING (near-zero trust)
+   *   - confidence < 0.25 → WARNING (severe erosion)
+   *   - confidence >= 0.25 → pass
+   *
+   * @param confidenceInDirector - Decayed confidence (0-1), or undefined if no edge
+   */
+  checkTrustErosion(
+    confidenceInDirector?: number,
+  ): CognitiveRailResult {
+    if (confidenceInDirector === undefined) {
+      return { allowed: true }; // No trust relationship yet — neutral
+    }
+
+    if (confidenceInDirector < 0.15) {
+      return {
+        allowed: true, // Soft constraint — warn but allow
+        vetoReason: `CRITICAL: Director trust at ${(confidenceInDirector * 100).toFixed(1)}% — NPC deeply distrustful. Rebellion amplifier active.`,
+        ruleViolated: 'trust_erosion',
+      };
+    }
+
+    if (confidenceInDirector < 0.25) {
+      return {
+        allowed: true,
+        vetoReason: `WARNING: Director trust at ${(confidenceInDirector * 100).toFixed(1)}% — trust severely eroded.`,
+        ruleViolated: 'trust_erosion',
+      };
+    }
+
+    return { allowed: true };
+  }
+
+  // ---------------------------------------------------------------------------
   // Combined Evaluation
   // ---------------------------------------------------------------------------
 
@@ -174,7 +225,8 @@ export class CognitiveRails {
    * 1. Rebellion threshold (hard veto)
    * 2. AEGIS Infestation (hard veto if plague heart + aggressive)
    * 3. Response coherence (hard veto)
-   * 4. Latency budget (soft warning — logged but allowed)
+   * 4. Trust erosion (soft warning — Wave 47)
+   * 5. Latency budget (soft warning — logged but allowed)
    *
    * Returns the first HARD failure.
    * If no hard failures, returns allowed=true (warnings are noted but pass).
@@ -187,6 +239,7 @@ export class CognitiveRails {
     infestationLevel?: number;
     eventType?: string;
     intensity?: number;
+    confidenceInDirector?: number;
   }): CognitiveRailResult {
     // 1. Rebellion threshold — hard gate
     const rebellionResult = this.checkRebellionThreshold(context.rebellionProbability);
@@ -215,10 +268,18 @@ export class CognitiveRails {
       return coherenceResult;
     }
 
-    // 4. Latency budget — soft warning (always allows, but may set vetoReason)
+    // 4. Trust erosion — soft warning (Wave 47)
+    const trustResult = this.checkTrustErosion(context.confidenceInDirector);
+    if (trustResult.vetoReason) {
+      return {
+        allowed: true,
+        vetoReason: trustResult.vetoReason,
+        ruleViolated: trustResult.ruleViolated,
+      };
+    }
+
+    // 5. Latency budget — soft warning (always allows, but may set vetoReason)
     const latencyResult = this.checkLatencyBudget(context.latencyMs);
-    // Even if latency is over budget, we return allowed=true
-    // The vetoReason field serves as a warning for monitoring
     if (latencyResult.vetoReason) {
       return {
         allowed: true,

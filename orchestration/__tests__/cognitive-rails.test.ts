@@ -180,4 +180,74 @@ describe('CognitiveRails', () => {
     });
     expect(result.allowed).toBe(true);
   });
+
+  // ---------------------------------------------------------------------------
+  // Wave 47: Trust Erosion Rail (Rail 5)
+  // ---------------------------------------------------------------------------
+  test('trust erosion: allows with no confidence (undefined)', () => {
+    const result = rails.checkTrustErosion(undefined);
+    expect(result.allowed).toBe(true);
+    expect(result.vetoReason).toBeUndefined();
+  });
+
+  test('trust erosion: allows with healthy trust (>= 0.25)', () => {
+    const result = rails.checkTrustErosion(0.6);
+    expect(result.allowed).toBe(true);
+    expect(result.vetoReason).toBeUndefined();
+  });
+
+  test('trust erosion: warns at severe erosion (< 0.25)', () => {
+    const result = rails.checkTrustErosion(0.20);
+    expect(result.allowed).toBe(true);
+    expect(result.vetoReason).toContain('WARNING');
+    expect(result.ruleViolated).toBe('trust_erosion');
+  });
+
+  test('trust erosion: critical warning at near-zero trust (< 0.15)', () => {
+    const result = rails.checkTrustErosion(0.10);
+    expect(result.allowed).toBe(true);
+    expect(result.vetoReason).toContain('CRITICAL');
+    expect(result.vetoReason).toContain('deeply distrustful');
+    expect(result.ruleViolated).toBe('trust_erosion');
+  });
+
+  test('trust erosion: warns at exact boundary 0.15', () => {
+    const result = rails.checkTrustErosion(0.15);
+    expect(result.allowed).toBe(true);
+    // 0.15 is >= 0.15 so not CRITICAL, but < 0.25 so WARNING
+    expect(result.vetoReason).toContain('WARNING');
+  });
+
+  test('evaluateAll includes trust erosion context (Wave 47)', () => {
+    const result = rails.evaluateAll({
+      rebellionProbability: 0.30,
+      aiResponse: 'Valid response',
+      latencyMs: 1000,
+      confidenceInDirector: 0.10,
+    });
+    expect(result.allowed).toBe(true);
+    expect(result.vetoReason).toContain('CRITICAL');
+    expect(result.ruleViolated).toBe('trust_erosion');
+  });
+
+  test('evaluateAll: rebellion veto takes priority over trust erosion', () => {
+    const result = rails.evaluateAll({
+      rebellionProbability: 0.90,
+      aiResponse: 'Valid response',
+      latencyMs: 1000,
+      confidenceInDirector: 0.05,
+    });
+    expect(result.allowed).toBe(false);
+    expect(result.ruleViolated).toBe('rebellion_threshold');
+  });
+
+  test('evaluateAll: backward compat — no confidenceInDirector still works', () => {
+    const result = rails.evaluateAll({
+      rebellionProbability: 0.30,
+      aiResponse: 'Valid response',
+      latencyMs: 1000,
+    });
+    expect(result.allowed).toBe(true);
+    expect(result.vetoReason).toBeUndefined();
+  });
 });

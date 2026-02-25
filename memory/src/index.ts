@@ -14,7 +14,7 @@ export type { PoolOptions } from './graph/connection-pool';
 export { RetryQueue } from './graph/retry-queue';
 export type { QueuedOperation, RetryQueueOptions } from './graph/retry-queue';
 export { NPCMemoryGraph } from './graph/npc-memory';
-export { ConfidenceManager } from './graph/confidence-edge';
+export { ConfidenceManager, applyConfidenceDecay } from './graph/confidence-edge';
 
 // Trauma & decay
 export { TraumaScorer } from './trauma/trauma-scorer';

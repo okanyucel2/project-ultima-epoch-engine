@@ -10,6 +10,10 @@ module.exports = {
   testMatch: ['**/__tests__/**/*.test.ts'],
   testPathIgnorePatterns: ['/node_modules/', '/integration/'],
   moduleFileExtensions: ['ts', 'js', 'json'],
+  moduleNameMapper: {
+    '^@epoch/shared/(.*)$': path.resolve(projectRoot, 'shared/types/$1'),
+    '^@epoch/shared$': path.resolve(projectRoot, 'shared/types/index'),
+  },
   transform: {
     '^.+\\.ts$': [
       'ts-jest',

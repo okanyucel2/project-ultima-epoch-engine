@@ -15,7 +15,7 @@
 // =============================================================================
 
 import type { RoutingDecision } from '@epoch/shared/ai-router';
-import type { WisdomScore, TraumaScore, ConfidenceEdge } from '@epoch/shared/memory';
+import type { WisdomScore, TraumaScore, ConfidenceEdge, DecayedConfidence } from '@epoch/shared/memory';
 import type { EpochTimestamp } from '@epoch/shared/common';
 import { AuditLogger } from './audit-logger';
 
@@ -51,6 +51,12 @@ export interface IMemoryBackend {
     probability: number;
     factors: string[];
   }>;
+
+  /** Wave 47: Get time-decayed confidence between NPC and entity */
+  getDecayedConfidence(
+    npcId: string,
+    entityId: string,
+  ): Promise<DecayedConfidence | null>;
 }
 
 // =============================================================================
@@ -204,18 +210,18 @@ export class MemoryIntegration {
       };
     }
 
-    const profile = await this.memoryBackend.getNPCProfile(npcId);
+    // Wave 47: Use decayed confidence instead of raw stored value
+    const [profile, decayedDirectorConf] = await Promise.all([
+      this.memoryBackend.getNPCProfile(npcId),
+      this.memoryBackend.getDecayedConfidence(npcId, 'director'),
+    ]);
 
-    // Extract confidence in "director" entity from confidence relations
-    const directorRelation = profile.confidenceRelations.find(
-      (rel) => rel.entityId === 'director',
-    );
-    const confidenceInDirector = directorRelation
-      ? directorRelation.confidence
+    const confidenceInDirector = decayedDirectorConf
+      ? decayedDirectorConf.decayedConfidence
       : 0.5; // Default neutral confidence
 
     return {
-      recentMemories: [], // Would need a getRecentMemories method on the backend
+      recentMemories: [],
       wisdomScore: profile.wisdomScore.score,
       traumaScore: profile.traumaScore.currentScore,
       rebellionRisk: profile.rebellionProbability,
