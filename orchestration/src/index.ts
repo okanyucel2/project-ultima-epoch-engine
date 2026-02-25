@@ -11,6 +11,7 @@
 //   POST /api/events/batch — Process multiple events concurrently
 //   GET  /api/audit/recent — Recent audit log entries
 //   GET  /api/audit/stats  — Aggregated audit statistics
+//   GET  /api/v1/npc/spawn-manifest — UE5 NPC spawn data with live enrichment
 //
 // WebSocket on PORTS.WEBSOCKET (32064)
 // =============================================================================
@@ -44,6 +45,10 @@ import { AEGISSupervisor } from './services/aegis-supervisor';
 import { DoomsdayOrchestrator } from './scenarios/doomsday-orchestrator';
 import type { TimelinePhase } from './scenarios/doomsday-orchestrator';
 import type { MeshEvent } from './neural-mesh/types';
+
+// NPC Catalog & Spawn Manifest (Wave 48)
+import { NPC_CATALOG } from './data/npc-catalog';
+import type { SpawnManifestResponse } from './data/spawn-manifest-schema';
 
 config();
 
@@ -341,6 +346,63 @@ app.post('/api/doomsday/trigger', async (req, res) => {
   } catch (error) {
     res.status(500).json({
       error: error instanceof Error ? error.message : 'Doomsday execution failed',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// GET /api/v1/npc/spawn-manifest — UE5 NPC spawn data (Wave 48)
+// UE5 fetches this on startup to spawn NPC actors at world-space transforms.
+// Each NPC is enriched with live Neo4j data (decayed confidence, trauma, rebellion).
+// ---------------------------------------------------------------------------
+app.get('/api/v1/npc/spawn-manifest', async (_req, res) => {
+  try {
+    const npcs = await Promise.all(
+      NPC_CATALOG.map(async (npc) => {
+        // Start with catalog defaults
+        let psychState = { ...npc.defaults };
+
+        // Enrich with live Neo4j data if memory backend is available
+        if (memoryIntegration?.isAvailable()) {
+          try {
+            const context = await memoryIntegration.getNPCContext(npc.npcId);
+            psychState = {
+              wisdomScore: context.wisdomScore || npc.defaults.wisdomScore,
+              traumaScore: context.traumaScore || npc.defaults.traumaScore,
+              rebellionProbability: context.rebellionRisk || npc.defaults.rebellionProbability,
+              confidenceInDirector: context.confidenceInDirector,
+              workEfficiency: npc.defaults.workEfficiency,
+              morale: npc.defaults.morale,
+            };
+          } catch {
+            // Neo4j enrichment failed — fall back to catalog defaults
+          }
+        }
+
+        return {
+          npcId: npc.npcId,
+          name: npc.name,
+          archetype: npc.archetype,
+          description: npc.description,
+          spawnTransform: npc.spawnTransform,
+          visualHints: npc.visualHints,
+          psychState,
+        };
+      }),
+    );
+
+    const response: SpawnManifestResponse = {
+      version: EPOCH_VERSION,
+      generatedAt: new Date().toISOString(),
+      npcCount: npcs.length,
+      npcs,
+    };
+
+    res.json(response);
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Spawn manifest generation failed',
       timestamp: new Date().toISOString(),
     });
   }
