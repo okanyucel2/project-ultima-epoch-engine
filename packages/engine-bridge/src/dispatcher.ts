@@ -4,6 +4,7 @@ import { NPCEventSchema, type NPCEvent } from './schemas/npc-events';
 import { SimulationTickSchema, type SimulationTick } from './schemas/simulation-ticks';
 import { RebellionAlertSchema, type RebellionAlert } from './schemas/rebellion-alerts';
 import { TelemetryEventSchema, type TelemetryEvent } from './schemas/telemetry';
+import { NPCCommandSchema, type NPCCommand } from './schemas/npc-commands';
 
 // =============================================================================
 // ENGINE-AGNOSTIC DISPATCHER
@@ -16,6 +17,7 @@ import { TelemetryEventSchema, type TelemetryEvent } from './schemas/telemetry';
 /** All supported channel names */
 export type ChannelName =
   | 'npc-events'
+  | 'npc-commands'
   | 'rebellion-alerts'
   | 'simulation-ticks'
   | 'telemetry'
@@ -24,6 +26,7 @@ export type ChannelName =
 /** Channel-to-type mapping */
 export interface ChannelPayloadMap {
   'npc-events': NPCEvent;
+  'npc-commands': NPCCommand;
   'rebellion-alerts': RebellionAlert;
   'simulation-ticks': SimulationTick;
   'telemetry': TelemetryEvent;
@@ -60,6 +63,7 @@ const DEFAULT_RECONNECT_MS = 5000;
 
 const ALL_CHANNELS: ChannelName[] = [
   'npc-events',
+  'npc-commands',
   'rebellion-alerts',
   'simulation-ticks',
   'telemetry',
@@ -72,6 +76,7 @@ const CHANNEL_SCHEMAS: Record<string, ZodSchema> = {
   'rebellion-alerts': RebellionAlertSchema,
   'simulation-ticks': SimulationTickSchema,
   'telemetry': TelemetryEventSchema,
+  'npc-commands': NPCCommandSchema,
   // system-status has no strict schema — passthrough
 };
 

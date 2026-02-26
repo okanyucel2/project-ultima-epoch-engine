@@ -3,6 +3,7 @@ import type { NPCEvent } from '../schemas/npc-events';
 import type { SimulationTick } from '../schemas/simulation-ticks';
 import type { RebellionAlert } from '../schemas/rebellion-alerts';
 import type { TelemetryEvent } from '../schemas/telemetry';
+import type { NPCCommand } from '../schemas/npc-commands';
 
 // =============================================================================
 // BASE EXPORTER — Abstract interface for engine-specific adapters
@@ -33,6 +34,9 @@ export interface EngineExporter {
 
   /** Transform telemetry event into engine-native format */
   onTelemetryEvent(data: TelemetryEvent, timestamp: string): void;
+
+  /** Transform NPC command (MoveTo, Stop, etc.) into engine-native format */
+  onNPCCommand(data: NPCCommand, timestamp: string): void;
 }
 
 /**
@@ -44,6 +48,7 @@ export abstract class BaseExporter implements EngineExporter {
 
   attach(dispatcher: EpochDispatcher): void {
     dispatcher.on('npc-events', this.onNPCEvent.bind(this));
+    dispatcher.on('npc-commands', this.onNPCCommand.bind(this));
     dispatcher.on('simulation-ticks', this.onSimulationTick.bind(this));
     dispatcher.on('rebellion-alerts', this.onRebellionAlert.bind(this));
     dispatcher.on('telemetry', this.onTelemetryEvent.bind(this));
@@ -51,12 +56,14 @@ export abstract class BaseExporter implements EngineExporter {
 
   detach(dispatcher: EpochDispatcher): void {
     dispatcher.off('npc-events', this.onNPCEvent.bind(this));
+    dispatcher.off('npc-commands', this.onNPCCommand.bind(this));
     dispatcher.off('simulation-ticks', this.onSimulationTick.bind(this));
     dispatcher.off('rebellion-alerts', this.onRebellionAlert.bind(this));
     dispatcher.off('telemetry', this.onTelemetryEvent.bind(this));
   }
 
   abstract onNPCEvent(data: NPCEvent, timestamp: string): void;
+  abstract onNPCCommand(data: NPCCommand, timestamp: string): void;
   abstract onSimulationTick(data: SimulationTick, timestamp: string): void;
   abstract onRebellionAlert(data: RebellionAlert, timestamp: string): void;
   abstract onTelemetryEvent(data: TelemetryEvent, timestamp: string): void;

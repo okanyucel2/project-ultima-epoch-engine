@@ -39,6 +39,7 @@ interface BroadcastEnvelope {
 
 const VALID_CHANNELS = new Set<string>([
   'npc-events',
+  'npc-commands',
   'rebellion-alerts',
   'simulation-ticks',
   'system-status',

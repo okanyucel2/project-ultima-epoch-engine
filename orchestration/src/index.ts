@@ -47,8 +47,11 @@ import type { TimelinePhase } from './scenarios/doomsday-orchestrator';
 import type { MeshEvent } from './neural-mesh/types';
 
 // NPC Catalog & Spawn Manifest (Wave 48)
-import { NPC_CATALOG } from './data/npc-catalog';
+import { NPC_CATALOG, getNPCDefinition } from './data/npc-catalog';
 import type { SpawnManifestResponse } from './data/spawn-manifest-schema';
+
+// NPC Commands (Wave 50)
+import { z } from 'zod';
 
 config();
 
@@ -298,6 +301,97 @@ app.post('/api/cleansing/deploy', async (req, res) => {
       timestamp: new Date().toISOString(),
     });
   }
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/v1/npc/command — Send navigation/action command to NPC (Wave 50)
+// Validates, broadcasts via WebSocket npc-commands channel.
+// UE5/Godot clients consume this to drive AI Controllers + NavMesh.
+// Dumb Client: engine NEVER decides where to go — orchestration commands it.
+// ---------------------------------------------------------------------------
+const NPCCommandPayloadSchema = z.object({
+  commandId: z.string(),
+  npcId: z.string(),
+  commandType: z.enum(['move_to', 'stop', 'look_at', 'play_montage']),
+  payload: z.record(z.unknown()),
+  priority: z.number().int().min(0).max(10).default(1),
+});
+
+const NPCCommandBatchPayloadSchema = z.object({
+  commands: z.array(NPCCommandPayloadSchema).min(1).max(50),
+});
+
+app.post('/api/v1/npc/command', (req, res) => {
+  // Single command
+  const result = NPCCommandPayloadSchema.safeParse(req.body);
+  if (!result.success) {
+    res.status(400).json({
+      error: 'Invalid NPC command',
+      details: result.error.issues,
+    });
+    return;
+  }
+
+  const command = result.data;
+
+  // Verify NPC exists in catalog
+  const npcDef = getNPCDefinition(command.npcId);
+  if (!npcDef) {
+    res.status(404).json({
+      error: `Unknown NPC: ${command.npcId}`,
+      knownNPCs: NPC_CATALOG.map((n) => ({ npcId: n.npcId, name: n.name })),
+    });
+    return;
+  }
+
+  // Broadcast to npc-commands channel
+  if (wsServer) {
+    wsServer.broadcast('npc-commands', command);
+  }
+
+  res.json({
+    accepted: true,
+    commandId: command.commandId,
+    npcId: command.npcId,
+    npcName: npcDef.name,
+    commandType: command.commandType,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+app.post('/api/v1/npc/command/batch', (req, res) => {
+  const result = NPCCommandBatchPayloadSchema.safeParse(req.body);
+  if (!result.success) {
+    res.status(400).json({
+      error: 'Invalid NPC command batch',
+      details: result.error.issues,
+    });
+    return;
+  }
+
+  const { commands } = result.data;
+  const results: Array<{ commandId: string; npcId: string; accepted: boolean; error?: string }> = [];
+
+  for (const command of commands) {
+    const npcDef = getNPCDefinition(command.npcId);
+    if (!npcDef) {
+      results.push({ commandId: command.commandId, npcId: command.npcId, accepted: false, error: 'Unknown NPC' });
+      continue;
+    }
+
+    if (wsServer) {
+      wsServer.broadcast('npc-commands', command);
+    }
+    results.push({ commandId: command.commandId, npcId: command.npcId, accepted: true });
+  }
+
+  res.json({
+    total: commands.length,
+    accepted: results.filter((r) => r.accepted).length,
+    rejected: results.filter((r) => !r.accepted).length,
+    results,
+    timestamp: new Date().toISOString(),
+  });
 });
 
 // ---------------------------------------------------------------------------

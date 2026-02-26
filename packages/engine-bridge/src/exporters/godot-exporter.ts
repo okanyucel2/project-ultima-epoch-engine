@@ -3,6 +3,7 @@ import type { NPCEvent } from '../schemas/npc-events';
 import type { SimulationTick } from '../schemas/simulation-ticks';
 import type { RebellionAlert } from '../schemas/rebellion-alerts';
 import type { TelemetryEvent } from '../schemas/telemetry';
+import type { NPCCommand } from '../schemas/npc-commands';
 
 // =============================================================================
 // GODOT NATIVE EXPORTER — GDScript Signal & AnimationTree Bridge
@@ -242,6 +243,42 @@ export class GodotExporter extends BaseExporter {
     };
 
     this.callback(frame);
+  }
+
+  onNPCCommand(data: NPCCommand, timestamp: string): void {
+    const signals: GodotSignal[] = [
+      {
+        signal: 'npc_command_received',
+        args: {
+          npc_id: data.npcId,
+          command_id: data.commandId,
+          command_type: data.commandType,
+          payload: data.payload,
+          priority: data.priority ?? 1,
+        },
+      },
+    ];
+
+    const nodeUpdates: GodotNodeUpdate[] = [];
+
+    if (data.commandType === 'move_to') {
+      const payload = data.payload as { targetLocation: { x: number; y: number; z: number }; movementMode?: string };
+      nodeUpdates.push({
+        nodePath: `/root/World/NPCs/${data.npcId}/NavigationAgent3D`,
+        properties: {
+          'target_position:x': payload.targetLocation.x,
+          'target_position:y': payload.targetLocation.y,
+          'target_position:z': payload.targetLocation.z,
+        },
+      });
+    }
+
+    this.callback({
+      signals,
+      animationParams: {},
+      nodeUpdates,
+      timestamp,
+    });
   }
 
   onTelemetryEvent(data: TelemetryEvent, timestamp: string): void {

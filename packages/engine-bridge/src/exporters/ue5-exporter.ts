@@ -3,6 +3,7 @@ import type { NPCEvent } from '../schemas/npc-events';
 import type { SimulationTick } from '../schemas/simulation-ticks';
 import type { RebellionAlert } from '../schemas/rebellion-alerts';
 import type { TelemetryEvent } from '../schemas/telemetry';
+import type { NPCCommand, MoveToPayload, LookAtPayload } from '../schemas/npc-commands';
 
 // =============================================================================
 // UE5 METAHUMAN EXPORTER — C++ Struct & Behavior Tree Bridge
@@ -246,6 +247,61 @@ export class UE5Exporter extends BaseExporter {
       faceStates: [faceState],
       vfxTriggers,
       materialParams,
+      timestamp,
+    });
+  }
+
+  onNPCCommand(data: NPCCommand, timestamp: string): void {
+    const blackboard: BehaviorTreeBlackboard = {
+      NPCId: data.npcId,
+      keys: {
+        CommandId: data.commandId,
+        CommandType: data.commandType,
+        CommandPriority: data.priority ?? 1,
+      },
+    };
+
+    if (data.commandType === 'move_to') {
+      const payload = data.payload as MoveToPayload;
+      blackboard.keys.TargetLocationX = payload.targetLocation.x;
+      blackboard.keys.TargetLocationY = payload.targetLocation.y;
+      blackboard.keys.TargetLocationZ = payload.targetLocation.z;
+      blackboard.keys.HasMoveTarget = true;
+      blackboard.keys.AcceptanceRadius = payload.acceptanceRadius ?? 50;
+
+      // Movement mode → speed multiplier for Animation Blueprint
+      const speedMap: Record<string, number> = {
+        walk: 0.35,
+        run: 0.7,
+        sprint: 1.0,
+        crouch: 0.2,
+      };
+      blackboard.keys.MovementSpeed = speedMap[payload.movementMode ?? 'walk'] ?? 0.35;
+      blackboard.keys.MovementMode = payload.movementMode ?? 'walk';
+    } else if (data.commandType === 'stop') {
+      blackboard.keys.HasMoveTarget = false;
+      blackboard.keys.MovementSpeed = 0;
+      blackboard.keys.TargetLocationX = 0;
+      blackboard.keys.TargetLocationY = 0;
+      blackboard.keys.TargetLocationZ = 0;
+    } else if (data.commandType === 'look_at') {
+      const payload = data.payload as LookAtPayload;
+      blackboard.keys.LookAtX = payload.targetLocation.x;
+      blackboard.keys.LookAtY = payload.targetLocation.y;
+      blackboard.keys.LookAtZ = payload.targetLocation.z;
+      blackboard.keys.HasLookAtTarget = true;
+    } else if (data.commandType === 'play_montage') {
+      const payload = data.payload as { montageName: string; playRate?: number };
+      blackboard.keys.MontageName = payload.montageName;
+      blackboard.keys.MontagePlayRate = payload.playRate ?? 1.0;
+    }
+
+    this.callback({
+      structs: [],
+      blackboards: [blackboard],
+      faceStates: [],
+      vfxTriggers: [],
+      materialParams: [],
       timestamp,
     });
   }
